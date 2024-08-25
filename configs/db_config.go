@@ -1,6 +1,9 @@
 package configs
 
 import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
@@ -8,8 +11,18 @@ import (
 	"time"
 )
 
+func CreateMysqlDB(dsn string) (*gorm.DB, error) {
+	return gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: GetMyDbLogger()})
+}
+
 func GetMysqlDsn(properties internal.MysqlProperties) string {
-	return ""
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		properties.Username,
+		properties.Password,
+		properties.Host,
+		properties.Port,
+		properties.Database,
+	)
 }
 
 func GetMyDbLogger() logger.Interface {
