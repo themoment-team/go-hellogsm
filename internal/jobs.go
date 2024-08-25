@@ -18,7 +18,10 @@ var (
 )
 
 func SetJobs(jobsAsString string) {
-	os.Setenv("jobs", strings.Join(validateJobs(strings.Split(jobsAsString, ",")), ","))
+	err := os.Setenv("jobs", strings.Join(validateJobs(strings.Split(jobsAsString, ",")), ","))
+	if err != nil {
+		panic("프로그램에 실행할 job 을 세트하는데 실패함.")
+	}
 }
 
 func GetJobs() []string {
