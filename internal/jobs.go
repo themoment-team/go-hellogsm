@@ -29,9 +29,9 @@ func validateJobs(jobs []string) []string {
 	var validatedJobs []string
 	for _, job := range jobs {
 		if isAvailableJob(job) {
-			validatedJobs = append(validatedJobs, strings.TrimSpace(job))
+			validatedJobs = append(validatedJobs, job)
 		} else {
-			fmt.Println(fmt.Sprintf("[%s] 에 해당하는 Job 은 없습니다. 무시됨.", job))
+			fmt.Println(fmt.Sprintf("[%s] 에 해당하는 Job 은 존재하지 않습니다. 무시됨.", job))
 		}
 	}
 
