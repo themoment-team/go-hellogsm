@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"gopkg.in/yaml.v2"
+	"log"
 	"os"
 )
 
@@ -38,8 +39,8 @@ func ExtractApplicationProperties(activeProfile AppProfile) ApplicationPropertie
 	return applicationProperties
 }
 
-func printMysqlInfo(applicationProperties ApplicationProperties) (int, error) {
-	return fmt.Println(fmt.Sprintf("mysql info : %s / %s / %s / %s / %s",
+func printMysqlInfo(applicationProperties ApplicationProperties) {
+	log.Println(fmt.Sprintf("mysql info : %s / %s / %s / %s / %s",
 		applicationProperties.Mysql.Host,
 		applicationProperties.Mysql.Port,
 		applicationProperties.Mysql.Username,

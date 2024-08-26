@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"gorm.io/gorm/utils"
+	"log"
 	"os"
 	"strings"
 )
@@ -34,7 +35,7 @@ func validateJobs(jobs []string) []string {
 		if isAvailableJob(job) {
 			validatedJobs = append(validatedJobs, job)
 		} else {
-			fmt.Println(fmt.Sprintf("[%s] 에 해당하는 Job 은 존재하지 않습니다. 무시됨.", job))
+			log.Println(fmt.Sprintf("[%s] 에 해당하는 Job 은 존재하지 않습니다. 무시됨.", job))
 		}
 	}
 

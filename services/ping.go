@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/repository"
@@ -19,7 +20,7 @@ func mysqlPing(properties internal.MysqlProperties) {
 
 	result := repository.SelectOne(db)
 	if result == 1 {
-		fmt.Println(fmt.Sprintf("mysql ping 결과: [%d] 성공", result))
+		log.Println(fmt.Sprintf("mysql ping 결과: [%d] 성공", result))
 	} else {
 		panic(fmt.Sprintf("mysql ping 결과: [%d] 실패", result))
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"themoment-team/go-hellogsm/internal"
-	"themoment-team/go-hellogsm/jobs"
+	"themoment-team/go-hellogsm/jobs/my_job"
 	"themoment-team/go-hellogsm/services"
 )
 
@@ -15,6 +15,6 @@ func main() {
 	// job 을 실행하기 전에 필요한 third-party 를 ping 한다.
 	services.Ping(properties)
 	// job 을 실행한다.
-	jobs.Run(properties, internal.GetJobs())
+	my_job.Run(properties, internal.GetJobs())
 
 }
