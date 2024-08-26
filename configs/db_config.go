@@ -7,15 +7,26 @@ import (
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
+	"sync"
 	"themoment-team/go-hellogsm/internal"
 	"time"
 )
 
-func CreateMysqlDB(dsn string) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: GetMyDbLogger()})
+// MyDB 는 CreateMysqlDB 에서 singleton 인스턴스를 생성한다.
+var MyDB gorm.DB
+var once sync.Once
+
+func CreateMysqlDB(dsn string) {
+	once.Do(func() {
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: GetMyDbLogger()})
+		if err != nil {
+			panic("DB 인스턴스화 실패")
+		}
+		MyDB = *db
+	})
 }
 
-func GetMysqlDsn(properties internal.MysqlProperties) string {
+func CreateMysqlDsn(properties internal.MysqlProperties) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		properties.Username,
 		properties.Password,

@@ -19,8 +19,7 @@ type MysqlProperties struct {
 	Database string `yaml:"database"`
 }
 
-func ExtractApplicationProperties(activeProfile AppProfile) ApplicationProperties {
-	// application-{activeProfile}.yml 을 /resource 에서 가져온다.
+func InitApplicationProperties(activeProfile AppProfile) ApplicationProperties {
 	applicationYamlName := getApplicationYamlRelativePath(activeProfile)
 	yamlFile, err := os.ReadFile(applicationYamlName)
 
@@ -33,10 +32,14 @@ func ExtractApplicationProperties(activeProfile AppProfile) ApplicationPropertie
 	if err != nil {
 		panic(err)
 	} else {
-		printMysqlInfo(applicationProperties)
+		printApplicationProperties(applicationProperties)
 	}
 
 	return applicationProperties
+}
+
+func printApplicationProperties(applicationProperties ApplicationProperties) {
+	printMysqlInfo(applicationProperties)
 }
 
 func printMysqlInfo(applicationProperties ApplicationProperties) {
@@ -49,6 +52,7 @@ func printMysqlInfo(applicationProperties ApplicationProperties) {
 	))
 }
 
+// application-{activeProfile}.yml 을 /resource 에서 가져온다.
 func getApplicationYamlRelativePath(activeProfile AppProfile) string {
 	return fmt.Sprintf("../resources/application-%s.yaml", activeProfile.Value)
 }

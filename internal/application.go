@@ -12,7 +12,7 @@ var (
 	jobs          string
 )
 
-func ProgramEssentialMeta() {
+func ApplicationArgsProcessor() {
 	parseFlagArgs()
 }
 

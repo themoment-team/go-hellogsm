@@ -1,12 +1,12 @@
 package repository
 
 import (
-	"gorm.io/gorm"
+	"themoment-team/go-hellogsm/configs"
 )
 
-func SelectOne(db *gorm.DB) int {
+func SelectOne() int {
 	var result int
-	tx := db.Raw("select 1").Scan(&result)
+	tx := configs.MyDB.Raw("select 1").Scan(&result)
 	if tx.Error != nil {
 		panic("sql execute error")
 	}
