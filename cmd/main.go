@@ -4,7 +4,7 @@ import (
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs/my_job"
-	"themoment-team/go-hellogsm/services"
+	"themoment-team/go-hellogsm/service"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 	// db 싱글톤 인스턴스를 생성한다.
 	configs.CreateMysqlDB(configs.CreateMysqlDsn(properties.Mysql))
 	// job 을 실행하기 전에 필요한 third-party 를 ping 한다.
-	services.Ping()
+	service.Ping()
 	// job 을 실행한다.
 	my_job.Run(properties, internal.GetJobs())
 
