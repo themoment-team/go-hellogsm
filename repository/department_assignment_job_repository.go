@@ -71,41 +71,6 @@ func QueryByScrenningsRemainingDepartment(firstScreening jobs.Screening, secondS
 	return sw, iot, ai
 }
 
-func QueryByExtraRemainingDepartment() (int, int, int) {
-	var sw, iot, ai int
-
-	rows, err := configs.MyDB.Raw(`
-        SELECT decided_major, COALESCE(COUNT(*), 0) 
-        FROM tb_oneseo
-        WHERE decided_major IS NOT NULL AND applied_screening IN ('EXTRA_ADMISSION', 'EXTRA_VETERANS')
-        GROUP BY decided_major
-    `).Rows()
-	if err != nil {
-		log.Println(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var major string
-		var count int
-		if err := rows.Scan(&major, &count); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		switch major {
-		case "SW":
-			sw = count
-		case "IOT":
-			iot = count
-		case "AI":
-			ai = count
-		}
-	}
-
-	return sw, iot, ai
-}
-
 type Applicant struct {
 	MemberID           int            `json:"member_id"`
 	AppliedScreening   jobs.Screening `json:"applied_screening"`
@@ -156,4 +121,12 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	}
 
 	return nil, applicants
+}
+
+func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
+	configs.MyDB.Raw(`
+		UPDATE tb_oneseo 
+		SET decided_major = ?
+		WHERE member_id = ?
+	`, &decideMajor, &memberId)
 }

@@ -73,17 +73,23 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 
 	for _, applicant := range finalTestPassApplicants {
 
+		memberId := applicant.MemberID
+
 		first := applicant.FirstDesiredMajor
 		second := applicant.SecondDesiredMajor
 		third := applicant.ThirdDesiredMajor
 
+		var decideMajor jobs.Major
+
 		switch applicant.AppliedScreening {
 		case jobs.GeneralScreening, jobs.SpecialScreening:
-			assign(jobs.NORMAL, first, second, third, remainingDepartment, maxDepartment)
+			decideMajor = assign(jobs.NORMAL, first, second, third, remainingDepartment, maxDepartment)
 		case jobs.ExtraVeteransScreening, jobs.ExtraAdmissionScreening:
-			assign(jobs.EXTRA, first, second, third, remainingDepartment, maxDepartment)
+			decideMajor = assign(jobs.EXTRA, first, second, third, remainingDepartment, maxDepartment)
 		}
 
+		// 배정된 학과를 반영
+		repository.UpdateDecideMajor(decideMajor, memberId)
 	}
 
 }
@@ -91,8 +97,19 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 func assign(
 	key string, first jobs.Major, second jobs.Major, third jobs.Major,
 	remainingDepartment map[string]map[jobs.Major]int, maxDepartment map[string]map[jobs.Major]int,
-) {
-
+) jobs.Major {
+	if remainingDepartment[key][first] < maxDepartment[key][first] {
+		remainingDepartment[key][first]++
+		return first
+	} else if remainingDepartment[key][second] < maxDepartment[key][second] {
+		remainingDepartment[key][second]++
+		return second
+	} else if remainingDepartment[key][third] < maxDepartment[key][third] {
+		remainingDepartment[key][third]++
+		return third
+	} else {
+		panic("발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
+	}
 }
 
 func makeRemainingDepartment(
