@@ -168,9 +168,13 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 }
 
 func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
-	configs.MyDB.Raw(`
+	tx := configs.MyDB.Exec(`
 		UPDATE tb_oneseo 
 		SET decided_major = ?
 		WHERE member_id = ?
-	`, &decideMajor, &memberId)
+	`, decideMajor, memberId)
+
+	if tx.Error != nil {
+		log.Println("배정된 학과 반영에 실패했습니다. ", tx.Error)
+	}
 }
