@@ -3,6 +3,7 @@ package repository
 import (
 	"log"
 	"themoment-team/go-hellogsm/configs"
+	"themoment-team/go-hellogsm/jobs"
 )
 
 func CountByGiveUpApplicant() int {
@@ -33,7 +34,7 @@ func CountByFinalPassApplicant() int {
 	return result
 }
 
-func QueryByNormalRemainingDepartment() (int, int, int) {
+func QueryByScrenningsRemainingDepartment(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
 	ai := 0
@@ -41,9 +42,9 @@ func QueryByNormalRemainingDepartment() (int, int, int) {
 	rows, err := configs.MyDB.Raw(`
         SELECT decided_major, COALESCE(COUNT(*), 0) 
         FROM tb_oneseo
-        WHERE decided_major IS NOT NULL AND applied_screening IN ('GENERAL', 'SPECIAL')
+        WHERE decided_major IS NOT NULL AND applied_screening IN (?, ?)
         GROUP BY decided_major
-    `).Rows()
+    `, firstScreening, secondScreening).Rows()
 	if err != nil {
 		log.Println(err)
 	}
@@ -106,11 +107,11 @@ func QueryByExtraRemainingDepartment() (int, int, int) {
 }
 
 type Applicant struct {
-	MemberID           int    `json:"member_id"`
-	AppliedScreening   string `json:"applied_screening"`
-	FirstDesiredMajor  string `json:"first_desired_major"`
-	SecondDesiredMajor string `json:"second_desired_major"`
-	ThirdDesiredMajor  string `json:"third_desired_major"`
+	MemberID           int            `json:"member_id"`
+	AppliedScreening   jobs.Screening `json:"applied_screening"`
+	FirstDesiredMajor  jobs.Major     `json:"first_desired_major"`
+	SecondDesiredMajor jobs.Major     `json:"second_desired_major"`
+	ThirdDesiredMajor  jobs.Major     `json:"third_desired_major"`
 }
 
 func QueryAllByFinalTestPassApplicant() (error, []Applicant) {

@@ -44,8 +44,8 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 		totalCapacity = giveUpCount
 		context.Put("totalCapacity", totalCapacity)
 
-		normalSwCount, normalIotCount, normalAiCount := repository.QueryByNormalRemainingDepartment()
-		extraSwCount, extraIotCount, extraAiCount := repository.QueryByExtraRemainingDepartment()
+		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsRemainingDepartment(jobs.GeneralScreening, jobs.SpecialScreening)
+		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsRemainingDepartment(jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening)
 		remainingDepartment := makeRemainingDepartment(
 			jobs.SWDepartment-normalSwCount, jobs.IOTDepartment-normalIotCount, jobs.AIDepartment-normalAiCount,
 			jobs.ExtraDepartment-extraSwCount, jobs.ExtraDepartment-extraIotCount, jobs.ExtraDepartment-extraAiCount)
@@ -76,8 +76,15 @@ func makeRemainingDepartment(
 
 func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 	//totalCapacity := context.Get("totalCapacity")
-	//remainingDepartment := context.Get("remainingDepartment")
 	//status := context.Get("status")
+
+	remainingDeptInterface := context.Get("remainingDepartment")
+
+	remainingDepartment, ok := remainingDeptInterface.(map[string]map[jobs.Major]int)
+	if !ok {
+		log.Println("remainingDeptInterface의 타입이 올바르지 않습니다.")
+		return
+	}
 
 	maxDepartment := make(map[jobs.Major]int)
 	maxDepartment[jobs.SW] = jobs.SWDepartment
@@ -87,7 +94,25 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 	_, finalTestPassApplicants := repository.QueryAllByFinalTestPassApplicant()
 
 	for _, applicant := range finalTestPassApplicants {
-		log.Println(applicant)
+
+		first := applicant.FirstDesiredMajor
+		second := applicant.SecondDesiredMajor
+		third := applicant.ThirdDesiredMajor
+
+		switch applicant.AppliedScreening {
+		case jobs.GeneralScreening, jobs.SpecialScreening:
+			assign(jobs.NORMAL, first, second, third, remainingDepartment, maxDepartment)
+		case jobs.ExtraVeteransScreening, jobs.ExtraAdmissionScreening:
+			assign(jobs.EXTRA, first, second, third, remainingDepartment, maxDepartment)
+		}
+
 	}
+
+}
+
+func assign(
+	key string, first jobs.Major, second jobs.Major, third jobs.Major,
+	remainingDepartment map[string]map[jobs.Major]int, maxDepartment map[jobs.Major]int,
+) {
 
 }
