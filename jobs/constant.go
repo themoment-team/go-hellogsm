@@ -20,6 +20,11 @@ const (
 	ExtraVeteransSuccessfulApplicantOf2E  int = 2
 	ExtraAdmissionSuccessfulApplicantOf2E int = 1
 
+	// 학과 별 정원
+	SWDepartment  = 36
+	IOTDepartment = 18
+	AIDepartment  = 18
+
 	// 그냥 전체. 발생하지 않을 수
 	JustAll int = 99999
 )

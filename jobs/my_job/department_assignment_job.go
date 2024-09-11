@@ -31,9 +31,9 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 		totalCapacity = repository.CountByFinalPassApplicant()
 		context.Put("totalCapacity", totalCapacity)
 
-		context.Put("SW", 0)
-		context.Put("IOT", 0)
-		context.Put("AI", 0)
+		context.Put("SW", jobs.SWDepartment)
+		context.Put("IOT", jobs.IOTDepartment)
+		context.Put("AI", jobs.AIDepartment)
 
 		context.Put("status", "일반학과배정")
 	} else {
@@ -43,9 +43,9 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 		context.Put("totalCapacity", totalCapacity)
 
 		sw, iot, ai := repository.QueryByRemainingDepartment()
-		context.Put("SW", sw)
-		context.Put("IOT", iot)
-		context.Put("AI", ai)
+		context.Put("SW", jobs.SWDepartment-sw)
+		context.Put("IOT", jobs.IOTDepartment-iot)
+		context.Put("AI", jobs.AIDepartment-ai)
 
 		context.Put("status", "추가학과배정")
 	}
