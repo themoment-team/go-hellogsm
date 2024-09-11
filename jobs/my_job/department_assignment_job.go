@@ -55,25 +55,6 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 	}
 }
 
-func makeRemainingDepartment(
-	normalSw int, normalIot int, normalAi int,
-	ExtraSw int, ExtraIot int, ExtraAi int,
-) map[string]map[jobs.Major]int {
-	remainingDepartment := make(map[string]map[jobs.Major]int)
-
-	remainingDepartment[jobs.NORMAL] = make(map[jobs.Major]int)
-	remainingDepartment[jobs.EXTRA] = make(map[jobs.Major]int)
-
-	remainingDepartment[jobs.NORMAL][jobs.SW] = normalSw
-	remainingDepartment[jobs.NORMAL][jobs.IOT] = normalIot
-	remainingDepartment[jobs.NORMAL][jobs.AI] = normalAi
-	remainingDepartment[jobs.EXTRA][jobs.SW] = ExtraSw
-	remainingDepartment[jobs.EXTRA][jobs.IOT] = ExtraIot
-	remainingDepartment[jobs.EXTRA][jobs.AI] = ExtraAi
-
-	return remainingDepartment
-}
-
 func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 	//totalCapacity := context.Get("totalCapacity")
 	//status := context.Get("status")
@@ -86,10 +67,7 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 		return
 	}
 
-	maxDepartment := make(map[jobs.Major]int)
-	maxDepartment[jobs.SW] = jobs.SWDepartment
-	maxDepartment[jobs.IOT] = jobs.IOTDepartment
-	maxDepartment[jobs.AI] = jobs.AIDepartment
+	maxDepartment := makeMaxDepartment()
 
 	_, finalTestPassApplicants := repository.QueryAllByFinalTestPassApplicant()
 
@@ -112,7 +90,42 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 
 func assign(
 	key string, first jobs.Major, second jobs.Major, third jobs.Major,
-	remainingDepartment map[string]map[jobs.Major]int, maxDepartment map[jobs.Major]int,
+	remainingDepartment map[string]map[jobs.Major]int, maxDepartment map[string]map[jobs.Major]int,
 ) {
 
+}
+
+func makeRemainingDepartment(
+	normalSw int, normalIot int, normalAi int,
+	ExtraSw int, ExtraIot int, ExtraAi int,
+) map[string]map[jobs.Major]int {
+	remainingDepartment := make(map[string]map[jobs.Major]int)
+
+	remainingDepartment[jobs.NORMAL] = make(map[jobs.Major]int)
+	remainingDepartment[jobs.EXTRA] = make(map[jobs.Major]int)
+
+	remainingDepartment[jobs.NORMAL][jobs.SW] = normalSw
+	remainingDepartment[jobs.NORMAL][jobs.IOT] = normalIot
+	remainingDepartment[jobs.NORMAL][jobs.AI] = normalAi
+	remainingDepartment[jobs.EXTRA][jobs.SW] = ExtraSw
+	remainingDepartment[jobs.EXTRA][jobs.IOT] = ExtraIot
+	remainingDepartment[jobs.EXTRA][jobs.AI] = ExtraAi
+
+	return remainingDepartment
+}
+
+func makeMaxDepartment() map[string]map[jobs.Major]int {
+	maxDepartment := make(map[string]map[jobs.Major]int)
+
+	maxDepartment[jobs.NORMAL] = make(map[jobs.Major]int)
+	maxDepartment[jobs.EXTRA] = make(map[jobs.Major]int)
+
+	maxDepartment[jobs.NORMAL][jobs.SW] = jobs.SWDepartment
+	maxDepartment[jobs.NORMAL][jobs.IOT] = jobs.IOTDepartment
+	maxDepartment[jobs.NORMAL][jobs.AI] = jobs.AIDepartment
+	maxDepartment[jobs.EXTRA][jobs.SW] = 2
+	maxDepartment[jobs.EXTRA][jobs.IOT] = 2
+	maxDepartment[jobs.EXTRA][jobs.AI] = 2
+
+	return maxDepartment
 }
