@@ -123,6 +123,50 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
+func QueryAllByAdditionalApplicant() (error, []Applicant) {
+	var applicants []Applicant
+
+	rows, err := configs.MyDB.Raw(`
+		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
+		FROM tb_member m 
+		JOIN tb_oneseo o ON m.member_id = o.member_id
+		JOIN tb_entrance_test_result tr ON tr.oneseo_id = o.oneseo_id
+		JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
+		WHERE tr.second_test_pass_yn = 'NO' AND o.entrance_intention_yn IS NULL 
+		ORDER BY 
+		tr.document_evaluation_score DESC, 
+		td.total_subjects_score DESC, 
+		(td.score_3_2 + td.score_3_1) DESC,
+		(td.score_2_2 + td.score_2_1) DESC, 
+		td.score_2_2 DESC, 
+		td.score_2_1 DESC, 
+		td.total_non_subjects_score DESC, 
+		m.birth ASC;
+	`).Rows()
+
+	if err != nil {
+		log.Println(err)
+		return err, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var applicant Applicant
+		if err := rows.Scan(&applicant.MemberID, &applicant.AppliedScreening, &applicant.FirstDesiredMajor, &applicant.SecondDesiredMajor, &applicant.ThirdDesiredMajor); err != nil {
+			log.Println(err)
+			return err, nil
+		}
+		applicants = append(applicants, applicant)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println(err)
+		return err, nil
+	}
+
+	return nil, applicants
+}
+
 func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
 	configs.MyDB.Raw(`
 		UPDATE tb_oneseo 

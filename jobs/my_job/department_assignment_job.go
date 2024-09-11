@@ -7,6 +7,13 @@ import (
 	"themoment-team/go-hellogsm/repository"
 )
 
+type DepartmentAssignmentStatus string
+
+const (
+	NORMAL_ASSIGNED     DepartmentAssignmentStatus = "NORMAL_ASSIGNED"
+	ADDITIONAL_ASSIGNED DepartmentAssignmentStatus = "ADDITIONAL_ASSIGNED"
+)
+
 type ConditionalAssignDepartment struct {
 }
 
@@ -37,7 +44,7 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 		remainingDepartment := makeRemainingDepartment(0, 0, 0, 0, 0, 0)
 		context.Put("remainingDepartment", remainingDepartment)
 
-		context.Put("status", "일반학과배정")
+		context.Put("status", NORMAL_ASSIGNED)
 	} else {
 		// 중도포기 지원자가 있다면 추가학과배정 진행
 
@@ -51,13 +58,13 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 			jobs.ExtraDepartment-extraSwCount, jobs.ExtraDepartment-extraIotCount, jobs.ExtraDepartment-extraAiCount)
 		context.Put("remainingDepartment", remainingDepartment)
 
-		context.Put("status", "추가학과배정")
+		context.Put("status", ADDITIONAL_ASSIGNED)
 	}
 }
 
 func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 	//totalCapacity := context.Get("totalCapacity")
-	//status := context.Get("status")
+	status := context.Get("status")
 
 	remainingDeptInterface := context.Get("remainingDepartment")
 
@@ -69,7 +76,20 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 
 	maxDepartment := makeMaxDepartment()
 
-	_, finalTestPassApplicants := repository.QueryAllByFinalTestPassApplicant()
+	var finalTestPassApplicants []repository.Applicant
+	var err error
+
+	switch status {
+	case NORMAL_ASSIGNED:
+		err, finalTestPassApplicants = repository.QueryAllByFinalTestPassApplicant()
+	case ADDITIONAL_ASSIGNED:
+		err, finalTestPassApplicants = repository.QueryAllByAdditionalApplicant()
+	}
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	for _, applicant := range finalTestPassApplicants {
 
