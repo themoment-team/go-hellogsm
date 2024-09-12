@@ -9,25 +9,11 @@ import (
 func CountByGiveUpApplicant() int {
 	result := 0
 	tx := configs.MyDB.Raw(`
-							SELECT COALESCE(COUNT(*), 0) 
-							FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
-							WHERE tr.second_test_pass_yn = 'YES' AND 
-							      o.entrance_intention_yn = 'NO'
-					`).Scan(&result)
-	if tx.Error != nil {
-		log.Println(tx.Error.Error())
-	}
-	return result
-}
-
-func CountByFinalPassApplicant() int {
-	result := 0
-	tx := configs.MyDB.Raw(`
-							SELECT COALESCE(COUNT(*), 0) 
-							FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
-							WHERE tr.second_test_pass_yn = 'YES' AND 
-							      o.entrance_intention_yn IS NULL
-					`).Scan(&result)
+		SELECT COALESCE(COUNT(*), 0) 
+		FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
+		WHERE tr.second_test_pass_yn = 'YES' AND 
+			  o.entrance_intention_yn = 'NO' 
+	`).Scan(&result)
 	if tx.Error != nil {
 		log.Println(tx.Error.Error())
 	}
@@ -42,7 +28,9 @@ func QueryByScrenningsRemainingDepartment(firstScreening jobs.Screening, secondS
 	rows, err := configs.MyDB.Raw(`
         SELECT decided_major, COALESCE(COUNT(*), 0) 
         FROM tb_oneseo
-        WHERE decided_major IS NOT NULL AND applied_screening IN (?, ?)
+        WHERE decided_major IS NOT NULL AND 
+              entrance_intention_yn = 'NO' AND
+              applied_screening IN (?, ?) 
         GROUP BY decided_major
     `, firstScreening, secondScreening).Rows()
 	if err != nil {
@@ -88,7 +76,9 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 		JOIN tb_oneseo o ON m.member_id = o.member_id
 		JOIN tb_entrance_test_result tr ON tr.oneseo_id = o.oneseo_id
 		JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
-		WHERE tr.second_test_pass_yn = 'YES' AND o.entrance_intention_yn IS NULL 
+		WHERE tr.second_test_pass_yn = 'YES' AND 
+		      o.entrance_intention_yn IS NULL AND 
+		      m.role = 'APPLICANT'
 		ORDER BY 
 		tr.document_evaluation_score DESC, 
 		td.total_subjects_score DESC, 
@@ -132,7 +122,9 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 		JOIN tb_oneseo o ON m.member_id = o.member_id
 		JOIN tb_entrance_test_result tr ON tr.oneseo_id = o.oneseo_id
 		JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
-		WHERE tr.second_test_pass_yn = 'NO' AND o.entrance_intention_yn IS NULL 
+		WHERE tr.second_test_pass_yn = 'NO' AND
+		      o.entrance_intention_yn IS NULL AND 
+		      m.role = 'APPLICANT'
 		ORDER BY 
 		tr.document_evaluation_score DESC, 
 		td.total_subjects_score DESC, 
