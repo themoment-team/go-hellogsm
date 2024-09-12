@@ -115,12 +115,15 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 		if err == nil {
 			repository.UpdateDecideMajor(decideMajor, memberId)
 		} else {
-			log.Println("추가학과배정 종료")
 			return
 		}
 	}
 
-	log.Println("일반학과배정 종료")
+	if status == NORMAL_ASSIGNED {
+		log.Println("일반학과배정 종료")
+	} else {
+		log.Println("추가학과배정 종료")
+	}
 
 }
 
