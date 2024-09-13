@@ -21,12 +21,12 @@ update tb_oneseo
 set applied_screening = ?
 where oneseo_id in (select tbo.oneseo_id
                     from tb_oneseo tbo
-                    join tb_entrance_test_result tbe
+                             join tb_entrance_test_result tbe on tbo.oneseo_id = tbe.oneseo_id
                     where tbo.wanted_screening = ?
+                      and tbo.applied_screening is null
                     order by document_evaluation_score
                     limit ?)
 `, &appliedScreening, &wantedScreening, &top)
-
 }
 
 func IsAppliedScreeningAllNull() bool {
