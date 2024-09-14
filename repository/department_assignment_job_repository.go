@@ -170,3 +170,19 @@ func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
 		log.Println("배정된 학과 반영에 실패했습니다. ", tx.Error)
 	}
 }
+
+func RollBackDecideMajor(updatedMemberIds []int) {
+	if len(updatedMemberIds) == 0 {
+		return
+	}
+
+	tx := configs.MyDB.Exec(`
+		UPDATE tb_oneseo 
+		SET decided_major = NULL 
+		WHERE member_id IN (?)
+	`, updatedMemberIds)
+
+	if tx.Error != nil {
+		log.Println("DecideMajor 롤백에 실패했습니다. ", tx.Error)
+	}
+}

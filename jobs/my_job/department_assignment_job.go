@@ -54,6 +54,8 @@ func (a *ConditionalAssignDepartment) Processor(context *jobs.BatchContext) {
 	}
 }
 
+var updatedMemberIds []int
+
 func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 
 	statusInterface := context.Get("status")
@@ -113,6 +115,7 @@ func (s *ApplicantAssignDepartment) Processor(context *jobs.BatchContext) {
 
 		// 배정된 학과를 반영
 		if err == nil {
+			updatedMemberIds = append(updatedMemberIds, memberId)
 			repository.UpdateDecideMajor(decideMajor, memberId)
 		} else {
 			return
@@ -142,6 +145,8 @@ func assign(
 		return third, nil
 	} else {
 		if status == NORMAL_ASSIGNED {
+			log.Println("DecideMajor 롤백을 진행합니다.")
+			repository.RollBackDecideMajor(updatedMemberIds)
 			panic("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
 		} else {
 			return "", errors.New("학과가 배정되지 않았습니다")
