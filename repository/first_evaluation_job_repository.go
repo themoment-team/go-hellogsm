@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/jobs"
@@ -15,18 +16,32 @@ func CountOneseoByWantedScreening(wantedScreening string) int {
 	return result
 }
 
-func SaveAppliedScreening(wantedScreening jobs.Screening, appliedScreening jobs.Screening, top int) {
-	configs.MyDB.Raw(`
-update tb_oneseo
-set applied_screening = ?
-where oneseo_id in (select tbo.oneseo_id
-                    from tb_oneseo tbo
-                             join tb_entrance_test_result tbe on tbo.oneseo_id = tbe.oneseo_id
-                    where tbo.wanted_screening = ?
-                      and tbo.applied_screening is null
-                    order by document_evaluation_score
-                    limit ?)
-`, &appliedScreening, &wantedScreening, &top)
+func CountOneseoByAppliedScreening(appliedScreening string) int {
+	var result int
+	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening = ?", appliedScreening).Scan(&result)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+	return result
+}
+
+func SaveAppliedScreening(evaluateScreening []jobs.Screening, appliedScreening jobs.Screening, top int) {
+	wantedSc := convertScreeningToStrArr(evaluateScreening)
+	query := fmt.Sprintf(`
+update tb_oneseo tbo
+    join (select tbo_inner.oneseo_id
+          from tb_oneseo tbo_inner
+                   join tb_entrance_test_result tbe
+                        on tbo_inner.oneseo_id = tbe.oneseo_id
+          where tbo_inner.wanted_screening in ?
+            and tbo_inner.applied_screening is null
+          order by tbe.document_evaluation_score
+          LIMIT ?) as limited_tbo
+    on tbo.oneseo_id = limited_tbo.oneseo_id
+set tbo.applied_screening = ?
+where tbo.oneseo_id is not null
+`)
+	configs.MyDB.Exec(query, wantedSc, top, appliedScreening)
 }
 
 func IsAppliedScreeningAllNull() bool {
@@ -43,10 +58,20 @@ func IsAppliedScreeningAllNullBy(wantedScreening jobs.Screening) bool {
 	return totalCount == nullCount
 }
 
-func IsAppliedScreeningAllNotNullBy(wantedScreening jobs.Screening) bool {
-	var totalCount int
-	var notnullCount int
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&totalCount)
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and applied_screening is not null", wantedScreening).Scan(&notnullCount)
-	return totalCount == notnullCount
+func SaveFirstTestPassYn() {
+	query := `
+update tb_entrance_test_result tbe
+    join tb_oneseo tbo on tbe.oneseo_id = tbo.oneseo_id
+set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null, 'YES', 'NO')
+where tbo.oneseo_id is not null;
+`
+	configs.MyDB.Exec(query)
+}
+
+func convertScreeningToStrArr(targetWantedScreenings []jobs.Screening) []string {
+	wantedSc := make([]string, len(targetWantedScreenings))
+	for i, screening := range targetWantedScreenings {
+		wantedSc[i] = string(screening)
+	}
+	return wantedSc
 }
