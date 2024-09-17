@@ -31,7 +31,7 @@ type MysqlProperties struct {
 	Database string `yaml:"database"`
 }
 
-func InitApplicationProperties(activeProfile AppProfile) ApplicationProperties {
+func InitApplicationProperties(activeProfile AppProfile) {
 	applicationYamlName := getApplicationYamlRelativePath(activeProfile)
 	yamlFile, err := os.ReadFile(applicationYamlName)
 
@@ -49,7 +49,6 @@ func InitApplicationProperties(activeProfile AppProfile) ApplicationProperties {
 
 	// 전역 변수로 사용 가능하도록 한다.
 	SafeApplicationProperties = applicationProperties
-	return applicationProperties
 }
 
 func printApplicationProperties(applicationProperties ApplicationProperties) {
