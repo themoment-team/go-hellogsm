@@ -4,3 +4,7 @@ mysql:
   username: root
   password: 1234
   database: hellogsm
+api:
+  relay-api:
+    url: https://internal.api.hellogsm.kr
+    key: thisissecret

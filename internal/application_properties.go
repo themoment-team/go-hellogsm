@@ -7,8 +7,20 @@ import (
 	"os"
 )
 
+var SafeApplicationProperties ApplicationProperties
+
 type ApplicationProperties struct {
-	Mysql MysqlProperties `yaml:"mysql"`
+	Mysql MysqlProperties   `yaml:"mysql"`
+	API   APIInfoProperties `yaml:"api"`
+}
+
+type APIInfoProperties struct {
+	RelayAPI APIInfo `yaml:"relay-api"`
+}
+
+type APIInfo struct {
+	URL string `yaml:"url"`
+	Key string `yaml:"key"`
 }
 
 type MysqlProperties struct {
@@ -35,15 +47,22 @@ func InitApplicationProperties(activeProfile AppProfile) ApplicationProperties {
 		printApplicationProperties(applicationProperties)
 	}
 
+	// 전역 변수로 사용 가능하도록 한다.
+	SafeApplicationProperties = applicationProperties
 	return applicationProperties
 }
 
 func printApplicationProperties(applicationProperties ApplicationProperties) {
 	printMysqlInfo(applicationProperties)
+	printAPI(applicationProperties)
+}
+
+func printAPI(properties ApplicationProperties) {
+	log.Println(fmt.Sprintf("api info found : %s", properties.API.RelayAPI))
 }
 
 func printMysqlInfo(applicationProperties ApplicationProperties) {
-	log.Println(fmt.Sprintf("mysql info : %s / %s / %s / %s / %s",
+	log.Println(fmt.Sprintf("mysql info found : %s / %s / %s / %s / %s",
 		applicationProperties.Mysql.Host,
 		applicationProperties.Mysql.Port,
 		applicationProperties.Mysql.Username,
