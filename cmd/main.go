@@ -11,7 +11,7 @@ func main() {
 
 	// 애플리케이션 실행 인자들을 확인해서 알맞게 초기화한다.
 	internal.ApplicationArgsProcessor()
-	// 프로그램 p 사용할 property들을 초기화한다.
+	// 프로그램에서 사용할 property를 초기화한다.
 	properties := internal.InitApplicationProperties(internal.GetActiveProfile())
 	// db 싱글톤 인스턴스를 생성한다.
 	configs.CreateMysqlDB(configs.CreateMysqlDsn(properties.Mysql))

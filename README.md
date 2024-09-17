@@ -14,7 +14,7 @@ go-hellogsm 은 www.hellogsm.kr (광주소프트웨어마이스터고 입학지�
 
 ```shell
 cd ~/cmd
-build main.go
+go build main.go
 ./main -profile local -jobs firstEvaluationJob
 ```
 
