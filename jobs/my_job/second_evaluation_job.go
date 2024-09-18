@@ -97,7 +97,7 @@ func (s *TotalEvaluationTopScoringApplicantsSelectionByScreeningStep) Processor(
 		repository.UpdateAppliedScreeingForSpecialFall,
 	)
 
-	log.Printf("일반전형으로 2차 전형을 진행한 인원 중 성적 상위 %d명을 합격처리합니다.", jobs.GeneralSuccessfulApplicantOf2E+remainingSpecialOneseos)
+	log.Printf("일반전형으로 2차 전형을 진행한 인원 중 성적 상위 %d명을 합격처리하고, 나머지 지원자를 탈락처리합니다.", jobs.GeneralSuccessfulApplicantOf2E+remainingSpecialOneseos)
 	requiredGeneralOneseos := jobs.GeneralSuccessfulApplicantOf2E + remainingSpecialOneseos
 	repository.UpdateSecondTestPassYnForGeneral(requiredGeneralOneseos)
 }
@@ -117,7 +117,7 @@ func processGroup(groupName jobs.Screening, fallbackScreening jobs.Screening, id
 	log.Printf("상위 %d명은 합격처리", limit)
 	passUpdater(passIds)
 
-	log.Printf("하위 %d명은 %s으로 변경합니다.", len(fallIds), fallbackScreening)
+	log.Printf("하위 %d명은 %s(으)로 변경합니다.", len(fallIds), fallbackScreening)
 	fallUpdater(fallIds)
 
 	return 0
