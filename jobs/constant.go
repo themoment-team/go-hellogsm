@@ -17,6 +17,8 @@ const (
 
 	// [2차 평가] 전형 별 합격자 수
 	GeneralSpecialSuccessfulApplicantOf2E int = 72
+	GeneralSuccessfulApplicantOf2E        int = 64
+	SpecialSuccessfulApplicantOf2E        int = 8
 	ExtraVeteransSuccessfulApplicantOf2E  int = 2
 	ExtraAdmissionSuccessfulApplicantOf2E int = 1
 
