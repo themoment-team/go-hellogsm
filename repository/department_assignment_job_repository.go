@@ -20,7 +20,7 @@ func CountByGiveUpApplicant() int {
 	return result
 }
 
-func QueryByScrenningsRemainingDepartment(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
+func QueryByScrenningsRemainingMajor(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
 	ai := 0
@@ -81,7 +81,7 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 		      m.role = 'APPLICANT'
 		ORDER BY 
 		(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		tr.total_subjects_score DESC, 
+		td.total_subjects_score DESC, 
 		(td.score_3_2 + td.score_3_1) DESC,
 		(td.score_2_2 + td.score_2_1) DESC, 
 		td.score_2_2 DESC, 
@@ -127,7 +127,7 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 		      m.role = 'APPLICANT'
 		ORDER BY 
 		(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		tr.total_subjects_score DESC, 
+		td.total_subjects_score DESC, 
 		(td.score_3_2 + td.score_3_1) DESC,
 		(td.score_2_2 + td.score_2_1) DESC, 
 		td.score_2_2 DESC, 

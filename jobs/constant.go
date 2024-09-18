@@ -22,10 +22,10 @@ const (
 	ExtraAdmissionSuccessfulApplicantOf2E int = 1
 
 	// 학과 별 정원
-	SWDepartment    = 36
-	IOTDepartment   = 18
-	AIDepartment    = 18
-	ExtraDepartment = 2
+	SWMajor    = 36
+	IOTMajor   = 18
+	AIMajor    = 18
+	ExtraMajor = 2
 
 	// 학과
 	SW  Major = "SW"

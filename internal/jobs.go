@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	FirstEvaluationJob      = "firstEvaluationJob"
-	SecondEvaluationJob     = "secondEvaluationJob"
-	DepartmentAssignmentJob = "departmentAssignmentJob"
+	FirstEvaluationJob  = "firstEvaluationJob"
+	SecondEvaluationJob = "secondEvaluationJob"
+	MajorAssignmentJob  = "majorAssignmentJob"
 )
 
 var (
-	MyJobs = []string{FirstEvaluationJob, SecondEvaluationJob, DepartmentAssignmentJob}
+	MyJobs = []string{FirstEvaluationJob, SecondEvaluationJob, MajorAssignmentJob}
 )
 
 func SetJobs(jobsAsString string) {
