@@ -64,34 +64,61 @@ func PostCheckAbsenteeExclusion() error {
 }
 
 func (s *TotalEvaluationTopScoringApplicantsSelectionByScreeningStep) Processor(context *jobs.BatchContext) {
-	// 특별전형으로 2차에 응시한 원서 조회
-	log.Printf("특별전형으로 2차 전형에 응시한 지원자를 조회합니다.")
+	log.Println("정원외특별전형(특례)으로 2차 전형에 응시한 지원자를 조회합니다.")
+	extraAdOneseoIds := repository.QueryExtraAdOneseoIds()
+	processGroup(
+		jobs.ExtraAdmissionScreening,
+		jobs.SpecialScreening,
+		extraAdOneseoIds,
+		jobs.ExtraAdmissionSuccessfulApplicantOf2E,
+		repository.UpdateSecondTestPassYnForExtraAdPass,
+		repository.UpdateAppliedScreeingForExtraAdFall,
+	)
+
+	log.Println("정원외특별전형(국가보훈)으로 2차 전형에 응시한 지원자를 조회합니다.")
+	extraVeOneseoIds := repository.QueryExtraVeOneseoIds()
+	processGroup(
+		jobs.ExtraVeteransScreening,
+		jobs.SpecialScreening,
+		extraVeOneseoIds,
+		jobs.ExtraVeteransSuccessfulApplicantOf2E,
+		repository.UpdateSecondTestPassYnForExtraVePass,
+		repository.UpdateAppliedScreeingForExtraVeFall,
+	)
+
+	log.Println("특별전형으로 2차 전형에 응시한 지원자를 조회합니다.")
 	specialOneseoIds := repository.QuerySpecialOneseoIds()
+	remainingSpecialOneseos := processGroup(
+		jobs.SpecialScreening,
+		jobs.GeneralScreening,
+		specialOneseoIds,
+		jobs.SpecialSuccessfulApplicantOf2E,
+		repository.UpdateSecondTestPassYnForSpecialPass,
+		repository.UpdateAppliedScreeingForSpecialFall,
+	)
 
-	var remainingSpecialOneseos int
-
-	// 특별전형 limit 분기처리 ( 그냥 하나로 합쳐도 될 듯? )
-	if len(specialOneseoIds) <= jobs.SpecialSuccessfulApplicantOf2E {
-		// 특별전형 인원이 limit 이하일때 전부 2차전형 합격처리
-		log.Printf("특별전형으로 2차 전형을 진행한 인원이 %d명 이하일 때 전부 합격처리합니다.", jobs.SpecialSuccessfulApplicantOf2E)
-		repository.UpdateSecondTestPassYnForSpecialPass(specialOneseoIds)
-		remainingSpecialOneseos = jobs.SpecialSuccessfulApplicantOf2E - len(specialOneseoIds)
-
-	} else {
-		// 특별전형 인원이 limit 초과일때 상위 limit명은 합격처리 후 하위 n-limit명은 일반전형으로 변경
-		log.Printf("특별전형으로 2차 전형을 진행한 인원이 %d명 초과일 때", jobs.SpecialSuccessfulApplicantOf2E)
-
-		log.Printf("상위 %d명은 합격처리", jobs.SpecialSuccessfulApplicantOf2E)
-		passSpecialOneseos := specialOneseoIds[:jobs.SpecialSuccessfulApplicantOf2E] // 인덱스 0~limit 까지 처리
-		repository.UpdateSecondTestPassYnForSpecialPass(passSpecialOneseos)          // 상위 limit명 합격처리
-
-		log.Printf("하위 %d명은 일반전형으로 변경합니다.", len(specialOneseoIds)-jobs.SpecialSuccessfulApplicantOf2E)
-		fallSpecialOneseos := specialOneseoIds[jobs.SpecialSuccessfulApplicantOf2E:] // 인덱스 limit~n 까지 처리
-		repository.UpdateAppliedScreeingForSpecialFall(fallSpecialOneseos)           // 하위 n-limit명 일반전형으로 변경
-	}
-
-	// 일반전형으로 2차에 응시한 지원자 상위 limit명 합격처리
 	log.Printf("일반전형으로 2차 전형을 진행한 인원 중 성적 상위 %d명을 합격처리합니다.", jobs.GeneralSuccessfulApplicantOf2E+remainingSpecialOneseos)
 	requiredGeneralOneseos := jobs.GeneralSuccessfulApplicantOf2E + remainingSpecialOneseos
 	repository.UpdateSecondTestPassYnForGeneral(requiredGeneralOneseos)
+}
+
+// groupName, fallbackScreening은 log용 param
+func processGroup(groupName jobs.Screening, fallbackScreening jobs.Screening, ids []int, limit int, passUpdater, fallUpdater func([]int)) int {
+	if len(ids) <= limit {
+		log.Printf("%s(으)로 2차 전형을 진행한 인원이 %d명 이하일 때 전부 합격처리합니다.", groupName, limit)
+		passUpdater(ids)
+		return limit - len(ids)
+	}
+
+	log.Printf("%s(으)로 2차 전형을 진행한 인원이 %d명 초과일 때", groupName, limit)
+	passIds := ids[:limit]
+	fallIds := ids[limit:]
+
+	log.Printf("상위 %d명은 합격처리", limit)
+	passUpdater(passIds)
+
+	log.Printf("하위 %d명은 %s으로 변경합니다.", len(fallIds), fallbackScreening)
+	fallUpdater(fallIds)
+
+	return 0
 }
