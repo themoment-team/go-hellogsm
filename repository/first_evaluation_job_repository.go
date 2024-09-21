@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"themoment-team/go-hellogsm/configs"
-	"themoment-team/go-hellogsm/jobs"
 )
 
 func CountOneseoByWantedScreening(wantedScreening string) int {
@@ -25,8 +24,7 @@ func CountOneseoByAppliedScreening(appliedScreening string) int {
 	return result
 }
 
-func SaveAppliedScreening(evaluateScreening []jobs.Screening, appliedScreening jobs.Screening, top int) {
-	wantedSc := convertScreeningToStrArr(evaluateScreening)
+func SaveAppliedScreening(evaluateScreening []string, appliedScreening string, top int) {
 	query := fmt.Sprintf(`
 update tb_oneseo tbo
     join (select tbo_inner.oneseo_id
@@ -41,7 +39,7 @@ update tb_oneseo tbo
 set tbo.applied_screening = ?
 where tbo.oneseo_id is not null
 `)
-	configs.MyDB.Exec(query, wantedSc, top, appliedScreening)
+	configs.MyDB.Exec(query, evaluateScreening, top, appliedScreening)
 }
 
 func IsAppliedScreeningAllNull() bool {
@@ -50,7 +48,7 @@ func IsAppliedScreeningAllNull() bool {
 	return result < 1
 }
 
-func IsAppliedScreeningAllNullBy(wantedScreening jobs.Screening) bool {
+func IsAppliedScreeningAllNullBy(wantedScreening string) bool {
 	var totalCount int
 	var nullCount int
 	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&totalCount)
@@ -66,12 +64,4 @@ set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null, 'YES', 'NO')
 where tbo.oneseo_id is not null;
 `
 	configs.MyDB.Exec(query)
-}
-
-func convertScreeningToStrArr(targetWantedScreenings []jobs.Screening) []string {
-	wantedSc := make([]string, len(targetWantedScreenings))
-	for i, screening := range targetWantedScreenings {
-		wantedSc[i] = string(screening)
-	}
-	return wantedSc
 }
