@@ -26,7 +26,8 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 시작 데이터 검증
 	err := canNextEvaluation(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionScreening)
 	if err != nil {
-		panic(err.Error())
+		log.Println(err.Error())
+		return
 	}
 
 	// 정원 외 특별전형 평가
@@ -42,7 +43,8 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 특별전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.SpecialScreening, jobs.ExtraVeteransScreening)
 	if err != nil {
-		panic(err.Error())
+		log.Println(err.Error())
+		return
 	}
 
 	// 특별전형 평가
@@ -53,7 +55,8 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 일반전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.SpecialScreening)
 	if err != nil {
-		panic(err.Error())
+		log.Println(err.Error())
+		return
 		// tx rollback
 	}
 
@@ -65,7 +68,8 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 평가 끝 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.GeneralScreening)
 	if err != nil {
-		panic(err.Error())
+		log.Println(err.Error())
+		return
 	}
 
 	// 합격/불합격자 구분 처리
@@ -92,7 +96,7 @@ func canNextEvaluation(to jobs.Screening, from jobs.Screening) error {
 // from -> to 검증의 경우,
 // 희망전형(to) 원서의 적용전형은 모두 null 을 보장 해야 함.
 func validateToScreening(to jobs.Screening) error {
-	isNull := repository.IsAppliedScreeningAllNullBy(to)
+	isNull := repository.IsAppliedScreeningAllNullBy(string(to))
 	if isNull == false {
 		return internal.ExtractExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
 	}
@@ -119,8 +123,8 @@ func afterAll() error {
 // 정원 외 특별전형 / 특례 대상 적용전형 처리.
 func applyExtraAdScreening() {
 	repository.SaveAppliedScreening(
-		[]jobs.Screening{jobs.ExtraAdmissionScreening},
-		jobs.ExtraAdmissionScreening,
+		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening}),
+		string(jobs.ExtraAdmissionScreening),
 		jobs.ExtraAdmissionSuccessfulApplicantOf1E,
 	)
 }
@@ -128,8 +132,8 @@ func applyExtraAdScreening() {
 // 정원 외 특별전형 / 국가 보훈 대상 적용전형 처리.
 func applyExtraVeScreening() {
 	repository.SaveAppliedScreening(
-		[]jobs.Screening{jobs.ExtraVeteransScreening},
-		jobs.ExtraVeteransScreening,
+		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraVeteransScreening}),
+		string(jobs.ExtraVeteransScreening),
 		jobs.ExtraVeteransSuccessfulApplicantOf1E,
 	)
 }
@@ -137,8 +141,8 @@ func applyExtraVeScreening() {
 // 특별전형 대상 적용전형 처리.
 func applySpecialScreening() {
 	repository.SaveAppliedScreening(
-		[]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening},
-		jobs.SpecialScreening,
+		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening}),
+		string(jobs.SpecialScreening),
 		jobs.SpecialSuccessfulApplicantOf1E,
 	)
 }
@@ -146,8 +150,8 @@ func applySpecialScreening() {
 // 일반전형 대상 적용전형 처리.
 func applyGeneralScreening() {
 	repository.SaveAppliedScreening(
-		[]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening, jobs.GeneralScreening},
-		jobs.GeneralScreening,
+		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening, jobs.GeneralScreening}),
+		string(jobs.GeneralScreening),
 		jobs.GeneralSuccessfulApplicantOf1E,
 	)
 }
@@ -169,4 +173,12 @@ func logAppliedScreeningResult(wantedScreening jobs.Screening, success1E int, ap
 		log.Printf("하위 [%d]명은 다음 평가 프로세스가 적용됩니다.",
 			applicantCount-success1E)
 	}
+}
+
+func convertScreeningToStrArr(jobScreening []jobs.Screening) []string {
+	strScreening := make([]string, len(jobScreening))
+	for i, screening := range jobScreening {
+		strScreening[i] = string(screening)
+	}
+	return strScreening
 }

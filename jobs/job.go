@@ -3,6 +3,7 @@ package jobs
 import (
 	"fmt"
 	"log"
+	"themoment-team/go-hellogsm/service"
 	"time"
 )
 
@@ -46,10 +47,22 @@ type DefaultJobListener struct {
 }
 
 func (l DefaultJobListener) BeforeJob() {
-	log.Println(fmt.Sprintf("job: [%s] is started at [%s]", l.jobName, l.startTime.Format("2006-01-02 15:04:05")))
+	startMsg := fmt.Sprintf("job: [%s] is started at [%s]", l.jobName, l.startTime.Format("2006-01-02 15:04:05"))
+	service.SendDiscordMsg(service.Template{
+		Title:       "배치 작업 시작 알림",
+		Content:     startMsg,
+		NoticeLevel: service.Info,
+	})
+	log.Println(startMsg)
 }
 
 func (l DefaultJobListener) AfterJob() {
 	endTime := time.Now()
-	log.Println(fmt.Sprintf("job: [%s] is finished at [%s] (elapsed time: %s)", l.jobName, endTime.Format("2006-01-02 15:04:05"), endTime.Sub(l.startTime)))
+	endMsg := fmt.Sprintf("job: [%s] is finished at [%s] (elapsed time: %s)", l.jobName, endTime.Format("2006-01-02 15:04:05"), endTime.Sub(l.startTime))
+	service.SendDiscordMsg(service.Template{
+		Title:       "배치 작업 종료 알림",
+		Content:     endMsg,
+		NoticeLevel: service.Info,
+	})
+	log.Println(endMsg)
 }
