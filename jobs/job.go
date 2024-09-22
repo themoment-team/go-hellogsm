@@ -1,8 +1,11 @@
 package jobs
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
+	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/service"
 	"time"
 )
@@ -26,19 +29,59 @@ func (job *SimpleJob) Name() string {
 }
 
 func (job *SimpleJob) Start() {
+	db, err := configs.MyDB.DB()
+	if err != nil {
+		fatalErr(err)
+	}
+	defer func() {
+		if closeErr := db.Close(); closeErr != nil {
+			log.Println("Error closing DB connection:", closeErr)
+		}
+	}()
+
+	// DB transaction begin
+	tx, err := db.Begin()
+	if err != nil {
+		fatalErr(err)
+	}
+
 	listener := *job.jobListener
 	if listener == nil {
 		listener = DefaultJobListener{job.name, time.Now()}
 	}
 	listener.BeforeJob()
+	// AfterJob() 은 어떠한 상황에서도 무조건 실행된다.
+	defer listener.AfterJob()
 
 	stepContext := NewBatchContext()
 	// step 은 기본적으로 배치된 순서에 따라 실행한다.
 	for _, step := range job.steps {
-		step.Processor(stepContext)
+		err := step.Processor(stepContext)
+		if err != nil {
+			handle(tx, err)
+		}
 	}
 
-	listener.AfterJob()
+	// DB transaction commit
+	err = tx.Commit()
+	if err != nil {
+		fatalErr(err)
+	}
+}
+
+func handle(tx *sql.Tx, err error) {
+	var rollbackErr RollbackNeededError
+	if errors.As(err, &rollbackErr) {
+		log.Printf("An RollbackNeededError occurred. 상세: [%s]", err.Error())
+		err := tx.Rollback()
+		if err != nil {
+			fatalErr(err)
+		}
+		log.Println("transaction rollback completed.")
+		panic("RollbackNeededError 발생으로 작업을 더 이상 진행하지 않음.")
+	} else {
+		log.Println("An unknown error occurred:", err)
+	}
 }
 
 type DefaultJobListener struct {
@@ -65,4 +108,9 @@ func (l DefaultJobListener) AfterJob() {
 		NoticeLevel: service.Info,
 	})
 	log.Println(endMsg)
+}
+
+func fatalErr(err error) {
+	log.Println("An fatal error occurred. Exiting...")
+	panic(err)
 }
