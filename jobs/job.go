@@ -3,8 +3,11 @@ package jobs
 import (
 	"fmt"
 	"log"
+	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/service"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type SimpleJob struct {
@@ -26,19 +29,22 @@ func (job *SimpleJob) Name() string {
 }
 
 func (job *SimpleJob) Start() {
-	listener := *job.jobListener
-	if listener == nil {
-		listener = DefaultJobListener{job.name, time.Now()}
-	}
-	listener.BeforeJob()
+	(&configs.MyDB).Transaction(func(tx *gorm.DB) error {
+		listener := *job.jobListener
+		if listener == nil {
+			listener = DefaultJobListener{job.name, time.Now()}
+		}
+		listener.BeforeJob()
 
-	stepContext := NewBatchContext()
-	// step 은 기본적으로 배치된 순서에 따라 실행한다.
-	for _, step := range job.steps {
-		step.Processor(stepContext)
-	}
+		stepContext := NewBatchContext()
+		// step 은 기본적으로 배치된 순서에 따라 실행한다.
+		for _, step := range job.steps {
+			step.Processor(stepContext)
+		}
 
-	listener.AfterJob()
+		listener.AfterJob()
+		return nil
+	})
 }
 
 type DefaultJobListener struct {
