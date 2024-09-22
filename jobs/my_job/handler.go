@@ -1,23 +1,30 @@
 package my_job
 
 import (
+	"log"
 	"themoment-team/go-hellogsm/internal"
 )
 
 func Run(applicationProperties internal.ApplicationProperties, jobs []string) {
 	for _, job := range jobs {
+		var err error
 		switch job {
 		case internal.FirstEvaluationJob:
 			firstEvaluationJob := BuildFirstEvaluationJob(applicationProperties)
-			firstEvaluationJob.Start()
+			err = firstEvaluationJob.Start()
 		case internal.SecondEvaluationJob:
 			secondEvaluationJob := BuildSecondEvaluationJob(applicationProperties)
-			secondEvaluationJob.Start()
+			err = secondEvaluationJob.Start()
 		case internal.DepartmentAssignmentJob:
 			departmentAssignmentJob := BuildDepartmentAssignmentJob(applicationProperties)
-			departmentAssignmentJob.Start()
+			err = departmentAssignmentJob.Start()
 		default:
 			doNothing()
+		}
+
+		if err != nil {
+			log.Println(err.Error())
+			return
 		}
 	}
 }

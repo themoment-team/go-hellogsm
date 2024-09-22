@@ -2,29 +2,29 @@ package repository
 
 import (
 	"fmt"
-	"log"
-	"themoment-team/go-hellogsm/configs"
+
+	"gorm.io/gorm"
 )
 
-func CountOneseoByWantedScreening(wantedScreening string) int {
+func CountOneseoByWantedScreening(wantedScreening string, tx *gorm.DB) (int, error) {
 	var result int
-	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&result)
-	if tx.Error != nil {
-		log.Println(tx.Error.Error())
+	err := tx.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&result).Error
+	if err != nil {
+		return 0, err
 	}
-	return result
+	return result, nil
 }
 
-func CountOneseoByAppliedScreening(appliedScreening string) int {
+func CountOneseoByAppliedScreening(appliedScreening string, tx *gorm.DB) (int, error) {
 	var result int
-	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening = ?", appliedScreening).Scan(&result)
-	if tx.Error != nil {
-		log.Println(tx.Error.Error())
+	err := tx.Raw("select count(*) from tb_oneseo where applied_screening = ?", appliedScreening).Scan(&result).Error
+	if err != nil {
+		return 0, err
 	}
-	return result
+	return result, nil
 }
 
-func SaveAppliedScreening(evaluateScreening []string, appliedScreening string, top int) {
+func SaveAppliedScreening(evaluateScreening []string, appliedScreening string, top int, tx *gorm.DB) error {
 	query := fmt.Sprintf(`
 update tb_oneseo tbo
     join (select tbo_inner.oneseo_id
@@ -39,29 +39,51 @@ update tb_oneseo tbo
 set tbo.applied_screening = ?
 where tbo.oneseo_id is not null
 `)
-	configs.MyDB.Exec(query, evaluateScreening, top, appliedScreening)
+
+	if err := tx.Exec(query, evaluateScreening, top, appliedScreening).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func IsAppliedScreeningAllNull() bool {
+func IsAppliedScreeningAllNull(tx *gorm.DB) (bool, error) {
 	var result int
-	configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening is not null").Scan(&result)
-	return result < 1
+	err := tx.Raw("select count(*) from tb_oneseo where applied_screening is not null").Scan(&result).Error
+	if err != nil {
+		return false, err
+	}
+	return result < 1, nil
 }
 
-func IsAppliedScreeningAllNullBy(wantedScreening string) bool {
+func IsAppliedScreeningAllNullBy(wantedScreening string, tx *gorm.DB) (bool, error) {
 	var totalCount int
 	var nullCount int
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&totalCount)
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and applied_screening is null", wantedScreening).Scan(&nullCount)
-	return totalCount == nullCount
+
+	err := tx.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&totalCount).Error
+	if err != nil {
+		return false, err
+	}
+
+	err = tx.Raw("select count(*) from tb_oneseo where wanted_screening = ? and applied_screening is null", wantedScreening).Scan(&nullCount).Error
+	if err != nil {
+		return false, err
+	}
+
+	return totalCount == nullCount, nil
 }
 
-func SaveFirstTestPassYn() {
+func SaveFirstTestPassYn(tx *gorm.DB) error {
 	query := `
 update tb_entrance_test_result tbe
     join tb_oneseo tbo on tbe.oneseo_id = tbo.oneseo_id
 set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null, 'YES', 'NO')
 where tbo.oneseo_id is not null;
 `
-	configs.MyDB.Exec(query)
+
+	if err := tx.Exec(query).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

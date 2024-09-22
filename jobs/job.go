@@ -28,8 +28,8 @@ func (job *SimpleJob) Name() string {
 	return job.name
 }
 
-func (job *SimpleJob) Start() {
-	(&configs.MyDB).Transaction(func(tx *gorm.DB) error {
+func (job *SimpleJob) Start() error {
+	return configs.MyDB.Transaction(func(tx *gorm.DB) error {
 		listener := *job.jobListener
 		if listener == nil {
 			listener = DefaultJobListener{job.name, time.Now()}
@@ -39,7 +39,10 @@ func (job *SimpleJob) Start() {
 		stepContext := NewBatchContext()
 		// step 은 기본적으로 배치된 순서에 따라 실행한다.
 		for _, step := range job.steps {
-			step.Processor(stepContext)
+			err := step.Processor(stepContext, tx)
+			if err != nil {
+				return err
+			}
 		}
 
 		listener.AfterJob()

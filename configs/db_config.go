@@ -2,14 +2,15 @@ package configs
 
 import (
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"sync"
 	"themoment-team/go-hellogsm/internal"
 	"time"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // MyDB 는 CreateMysqlDB 에서 singleton 인스턴스를 생성한다.
@@ -23,6 +24,7 @@ func CreateMysqlDB(dsn string) {
 			panic("DB 인스턴스화 실패")
 		}
 		MyDB = *db
+		MyDB.DB()
 	})
 }
 
