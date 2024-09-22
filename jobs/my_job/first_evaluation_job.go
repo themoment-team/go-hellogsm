@@ -22,12 +22,11 @@ func BuildFirstEvaluationJob(properties internal.ApplicationProperties) *jobs.Si
 	return jobs.NewSimpleJob(internal.FirstEvaluationJob, getSteps(), nil)
 }
 
-func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
+func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error {
 	// 시작 데이터 검증
 	err := canNextEvaluation(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionScreening)
 	if err != nil {
-		log.Println(err.Error())
-		return
+		return err
 	}
 
 	// 정원 외 특별전형 평가
@@ -43,8 +42,7 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 특별전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.SpecialScreening, jobs.ExtraVeteransScreening)
 	if err != nil {
-		log.Println(err.Error())
-		return
+		return err
 	}
 
 	// 특별전형 평가
@@ -55,9 +53,7 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 일반전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.SpecialScreening)
 	if err != nil {
-		log.Println(err.Error())
-		return
-		// tx rollback
+		return err
 	}
 
 	// 일반전형 평가
@@ -68,12 +64,12 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) {
 	// 평가 끝 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.GeneralScreening)
 	if err != nil {
-		log.Println(err.Error())
-		return
+		return err
 	}
 
 	// 합격/불합격자 구분 처리
 	decideFailedApplicants()
+	return nil
 }
 
 // 잘못된 평가 방향에 대한 검증을 진행한다.
@@ -98,7 +94,7 @@ func canNextEvaluation(to jobs.Screening, from jobs.Screening) error {
 func validateToScreening(to jobs.Screening) error {
 	isNull := repository.IsAppliedScreeningAllNullBy(string(to))
 	if isNull == false {
-		return internal.ExtractExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
+		return jobs.WrapExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
 	}
 	return nil
 }
@@ -108,7 +104,7 @@ func validateToScreening(to jobs.Screening) error {
 func beforeAll() error {
 	isAllNull := repository.IsAppliedScreeningAllNull()
 	if isAllNull == false {
-		return internal.ExtractExpectedActualIsDiffError("적용전형은 모두 null인 상태")
+		return jobs.WrapExpectedActualIsDiffError("적용전형은 모두 null인 상태")
 	}
 
 	return nil
