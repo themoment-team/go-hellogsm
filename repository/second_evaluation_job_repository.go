@@ -5,7 +5,7 @@ import (
 )
 
 func UpdateSecondTestPassStatusForAbsentees() {
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'NO'
 		WHERE first_test_pass_yn = 'YES' 
@@ -80,20 +80,20 @@ func QueryExtraAdOneseoIds() []int {
 func UpdateSecondTestPassYnForExtraAdPass(passExtraAdOneseoIds []int) {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, &passExtraAdOneseoIds)
+	`, passExtraAdOneseoIds)
 }
 
 // extra admission limit명 초과일때 하위 n명 applied_screening = SPECIAL 설정 쿼리
 func UpdateAppliedScreeingForExtraAdFall(fallExtraAdOneseoIds []int) {
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_oneseo
 		SET applied_screening = 'SPECIAL'
 		WHERE oneseo_id IN ?
-	`, &fallExtraAdOneseoIds)
+	`, fallExtraAdOneseoIds)
 }
 
 // extra veteran oneseo id조회 쿼리 (성적순으로 order)
@@ -126,20 +126,20 @@ func QueryExtraVeOneseoIds() []int {
 func UpdateSecondTestPassYnForExtraVePass(passExtraVeOneseoIds []int) {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, &passExtraVeOneseoIds)
+	`, passExtraVeOneseoIds)
 }
 
 // extra veteran limit명 초과일때 하위 n명 applied_screening = SPECIAL 설정 쿼리
 func UpdateAppliedScreeingForExtraVeFall(fallExtraVeOneseoIds []int) {
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_oneseo
 		SET applied_screening = 'SPECIAL'
 		WHERE oneseo_id IN ?
-	`, &fallExtraVeOneseoIds)
+	`, fallExtraVeOneseoIds)
 }
 
 // special oneseo id조회 쿼리 (성적순으로 order)
@@ -172,27 +172,27 @@ func QuerySpecialOneseoIds() []int {
 func UpdateSecondTestPassYnForSpecialPass(passSpecialOneseoIds []int) {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, &passSpecialOneseoIds)
+	`, passSpecialOneseoIds)
 }
 
 // special limit명 초과일때 하위 n명 applied_screening = general 설정 쿼리
 func UpdateAppliedScreeingForSpecialFall(fallSpecialOneseoIds []int) {
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_oneseo
 		SET applied_screening = 'GENERAL'
 		WHERE oneseo_id IN ?
-	`, &fallSpecialOneseoIds)
+	`, fallSpecialOneseoIds)
 }
 
 // general 성적 상위 n명(limit 호출쪽에서 능동적으로) second_test = pass & 나머지 지원자 탈락 처리
 func UpdateSecondTestPassYnForGeneral(generalPassLimit int) {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result tr
 		JOIN (
 			SELECT tr.entrance_test_result_id 
@@ -215,10 +215,10 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int) {
 			LIMIT ?
 		) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 		SET tr.second_test_pass_yn = 'YES';
-	`, &generalPassLimit)
+	`, generalPassLimit)
 
 	// second_test_pass_yn = NO
-	configs.MyDB.Raw(`
+	configs.MyDB.Exec(`
 		UPDATE tb_entrance_test_result tr
 		JOIN (
 			SELECT tr.entrance_test_result_id 

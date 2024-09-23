@@ -2,9 +2,10 @@ package internal
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"log"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 var SafeApplicationProperties ApplicationProperties
