@@ -6,5 +6,5 @@ mysql:
   database: hellogsm
 api:
   relay-api:
-    url: https://internal.api.hellogsm.kr
+    url: https://api.internal.hellogsm.kr
     key: thisissecret
