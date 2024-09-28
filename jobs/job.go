@@ -29,20 +29,11 @@ func (job *SimpleJob) Name() string {
 }
 
 func (job *SimpleJob) Start() {
-	db, err := configs.MyDB.DB()
+	db, _ := configs.MyDB.DB()
+	txManager := service.NewTransactionManager(db)
+	tx, err := txManager.BeginTx()
 	if err != nil {
-		fatalErr(err)
-	}
-	defer func() {
-		if closeErr := db.Close(); closeErr != nil {
-			log.Println("Error closing DB connection:", closeErr)
-		}
-	}()
-
-	// DB transaction begin
-	tx, err := db.Begin()
-	if err != nil {
-		fatalErr(err)
+		WrapFatalErr(err)
 	}
 
 	listener := *job.jobListener
@@ -56,31 +47,19 @@ func (job *SimpleJob) Start() {
 	stepContext := NewBatchContext()
 	// step 은 기본적으로 배치된 순서에 따라 실행한다.
 	for _, step := range job.steps {
-		err := step.Processor(stepContext)
+		err = step.Processor(stepContext, tx.(*sql.Tx))
 		if err != nil {
-			handle(tx, err)
+			rollback := processRollbackIfNeeded(err, txManager, tx)
+			if rollback {
+				// rollback 이 발생한 경우 더 이상 진행하지 않는다.
+				return
+			}
 		}
-	}
 
-	// DB transaction commit
-	err = tx.Commit()
-	if err != nil {
-		fatalErr(err)
-	}
-}
-
-func handle(tx *sql.Tx, err error) {
-	var rollbackErr RollbackNeededError
-	if errors.As(err, &rollbackErr) {
-		log.Printf("An RollbackNeededError occurred. 상세: [%s]", err.Error())
-		err := tx.Rollback()
+		err = txManager.Commit(tx)
 		if err != nil {
-			fatalErr(err)
+			WrapFatalErr(err)
 		}
-		log.Println("transaction rollback completed.")
-		panic("RollbackNeededError 발생으로 작업을 더 이상 진행하지 않음.")
-	} else {
-		log.Println("An unknown error occurred:", err)
 	}
 }
 
@@ -110,7 +89,18 @@ func (l DefaultJobListener) AfterJob() {
 	log.Println(endMsg)
 }
 
-func fatalErr(err error) {
-	log.Println("An fatal error occurred. Exiting...")
-	panic(err)
+func processRollbackIfNeeded(err error, txManager service.TransactionManager, tx interface{}) bool {
+	var rollbackErr RollbackNeededError
+	if errors.As(err, &rollbackErr) {
+		log.Println("error occurred and rollback.")
+		rollbackErr := txManager.Rollback(tx)
+		if rollbackErr != nil {
+			WrapFatalErr(rollbackErr)
+		}
+		return true
+	} else {
+		log.Println("error occurred but not rollback.")
+		log.Println(err)
+		return false
+	}
 }

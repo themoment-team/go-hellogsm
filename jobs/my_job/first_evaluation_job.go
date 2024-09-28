@@ -1,6 +1,7 @@
 package my_job
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"themoment-team/go-hellogsm/internal"
@@ -22,7 +23,7 @@ func BuildFirstEvaluationJob(properties internal.ApplicationProperties) *jobs.Si
 	return jobs.NewSimpleJob(internal.FirstEvaluationJob, getSteps(), nil)
 }
 
-func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error {
+func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext, tx *sql.Tx) error {
 	// 시작 데이터 검증
 	err := canNextEvaluation(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionScreening)
 	if err != nil {
@@ -33,11 +34,11 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error
 	// 특례 대상
 	extraAdCount := repository.CountOneseoByAppliedScreening(string(jobs.ExtraAdmissionScreening))
 	logAppliedScreeningResult(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionSuccessfulApplicantOf1E, extraAdCount)
-	applyExtraAdScreening()
+	applyExtraAdScreening(tx)
 	// 국가 보훈 대상
 	extraVeCount := repository.CountOneseoByAppliedScreening(string(jobs.ExtraVeteransScreening))
 	logAppliedScreeningResult(jobs.ExtraVeteransScreening, jobs.ExtraVeteransSuccessfulApplicantOf1E, extraVeCount)
-	applyExtraVeScreening()
+	applyExtraVeScreening(tx)
 
 	// 특별전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.SpecialScreening, jobs.ExtraVeteransScreening)
@@ -48,7 +49,7 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error
 	// 특별전형 평가
 	specialWantedCount := repository.CountOneseoByWantedScreening(string(jobs.SpecialScreening))
 	logAppliedScreeningResult(jobs.SpecialScreening, jobs.SpecialSuccessfulApplicantOf1E, specialWantedCount)
-	applySpecialScreening()
+	applySpecialScreening(tx)
 
 	// 일반전형 평가 전 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.SpecialScreening)
@@ -59,7 +60,7 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error
 	// 일반전형 평가
 	generalWantedCount := repository.CountOneseoByWantedScreening(string(jobs.GeneralScreening))
 	logAppliedScreeningResult(jobs.GeneralScreening, jobs.GeneralSuccessfulApplicantOf1E, generalWantedCount)
-	applyGeneralScreening()
+	applyGeneralScreening(tx)
 
 	// 평가 끝 데이터 검증
 	err = canNextEvaluation(jobs.GeneralScreening, jobs.GeneralScreening)
@@ -68,7 +69,7 @@ func (s *DecideAppliedScreeningStep) Processor(context *jobs.BatchContext) error
 	}
 
 	// 합격/불합격자 구분 처리
-	decideFailedApplicants()
+	decideFailedApplicants(tx)
 	return nil
 }
 
@@ -117,8 +118,8 @@ func afterAll() error {
 }
 
 // 정원 외 특별전형 / 특례 대상 적용전형 처리.
-func applyExtraAdScreening() {
-	repository.SaveAppliedScreening(
+func applyExtraAdScreening(tx *sql.Tx) {
+	repository.SaveAppliedScreening(tx,
 		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening}),
 		string(jobs.ExtraAdmissionScreening),
 		jobs.ExtraAdmissionSuccessfulApplicantOf1E,
@@ -126,8 +127,8 @@ func applyExtraAdScreening() {
 }
 
 // 정원 외 특별전형 / 국가 보훈 대상 적용전형 처리.
-func applyExtraVeScreening() {
-	repository.SaveAppliedScreening(
+func applyExtraVeScreening(tx *sql.Tx) {
+	repository.SaveAppliedScreening(tx,
 		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraVeteransScreening}),
 		string(jobs.ExtraVeteransScreening),
 		jobs.ExtraVeteransSuccessfulApplicantOf1E,
@@ -135,8 +136,8 @@ func applyExtraVeScreening() {
 }
 
 // 특별전형 대상 적용전형 처리.
-func applySpecialScreening() {
-	repository.SaveAppliedScreening(
+func applySpecialScreening(tx *sql.Tx) {
+	repository.SaveAppliedScreening(tx,
 		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening}),
 		string(jobs.SpecialScreening),
 		jobs.SpecialSuccessfulApplicantOf1E,
@@ -144,8 +145,8 @@ func applySpecialScreening() {
 }
 
 // 일반전형 대상 적용전형 처리.
-func applyGeneralScreening() {
-	repository.SaveAppliedScreening(
+func applyGeneralScreening(tx *sql.Tx) {
+	repository.SaveAppliedScreening(tx,
 		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening, jobs.GeneralScreening}),
 		string(jobs.GeneralScreening),
 		jobs.GeneralSuccessfulApplicantOf1E,
@@ -153,7 +154,7 @@ func applyGeneralScreening() {
 }
 
 // 불합격자 처리.
-func decideFailedApplicants() {
+func decideFailedApplicants(tx *sql.Tx) {
 	repository.SaveFirstTestPassYn()
 }
 

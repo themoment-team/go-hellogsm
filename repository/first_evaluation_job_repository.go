@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"themoment-team/go-hellogsm/configs"
@@ -24,7 +25,7 @@ func CountOneseoByAppliedScreening(appliedScreening string) int {
 	return result
 }
 
-func SaveAppliedScreening(evaluateScreening []string, appliedScreening string, top int) {
+func SaveAppliedScreening(tx *sql.Tx, evaluateScreening []string, appliedScreening string, top int) {
 	query := fmt.Sprintf(`
 update tb_oneseo tbo
     join (select tbo_inner.oneseo_id
@@ -39,7 +40,10 @@ update tb_oneseo tbo
 set tbo.applied_screening = ?
 where tbo.oneseo_id is not null
 `)
-	configs.MyDB.Exec(query, evaluateScreening, top, appliedScreening)
+	_, err := tx.Exec(query, evaluateScreening, top, appliedScreening)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func IsAppliedScreeningAllNull() bool {
