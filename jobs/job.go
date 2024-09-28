@@ -90,12 +90,12 @@ func (l DefaultJobListener) AfterJob() {
 }
 
 func processRollbackIfNeeded(err error, txManager service.TransactionManager, tx interface{}) bool {
-	var rollbackErr RollbackNeededError
-	if errors.As(err, &rollbackErr) {
+	var rollbackNeededError RollbackNeededError
+	if errors.As(err, &rollbackNeededError) {
 		log.Println("error occurred and rollback.", err)
-		rollbackErr := txManager.Rollback(tx)
-		if rollbackErr != nil {
-			WrapFatalErr(rollbackErr)
+		txRollbackErr := txManager.Rollback(tx)
+		if txRollbackErr != nil {
+			WrapFatalErr(txRollbackErr)
 		}
 		return true
 	} else {
