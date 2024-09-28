@@ -18,7 +18,7 @@ var once sync.Once
 
 func CreateMysqlDB(dsn string) {
 	once.Do(func() {
-		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: GetMyDbLogger()})
+		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: GetMyDbLogger(), SkipDefaultTransaction: true})
 		if err != nil {
 			panic("DB 인스턴스화 실패")
 		}
