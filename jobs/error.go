@@ -2,8 +2,10 @@ package jobs
 
 import (
 	"fmt"
+	"log"
 )
 
+type FatalError error
 type ExpectedActualIsDiffError error
 type RollbackNeededError error
 
@@ -13,4 +15,9 @@ func WrapExpectedActualIsDiffError(expected string) RollbackNeededError {
 
 func WrapRollbackNeededError(msg string) RollbackNeededError {
 	return fmt.Errorf("%s", msg)
+}
+
+func WrapFatalErr(err error) {
+	log.Println("An fatal error occurred. Exiting...")
+	panic(err)
 }
