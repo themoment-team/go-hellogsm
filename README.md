@@ -6,7 +6,7 @@ go-hellogsm 은 www.hellogsm.kr (광주소프트웨어마이스터고 입학지�
 
 * [1차 평가 배치 - firstEvaluationJob]()
 * [2차 평가 배치 - secondEvaluationJob]()
-* [최종 학과 배정 배치 - departmentAssignmentJob]()
+* [최종 학과 배정 배치 - majorAssignmentJob]()
 
 ## 개발자 가이드
 
@@ -21,7 +21,7 @@ go build main.go
 ### 파라미터 소개
 
 * profile: `local`, `stage`, `prod` 로 3가지를 지원하며 하나만 입력한다.
-* jobs: `firstEvaluationJob`, `secondEvaluationJob`, `departmentAssignmentJob` 3가지를 지원하며 복수 입력 가능하다.
+* jobs: `firstEvaluationJob`, `secondEvaluationJob`, `majorAssignmentJob` 3가지를 지원하며 복수 입력 가능하다.
     * 복수 입력 예시: `-jobs firstEvaluationJob,secondEvaluationJob,fake` 혹여나 잘못 입력했다고 하더라도(`fake`) 무시되니 괜찮다.
 
 ### panic 사용과 error 리턴의 usecase (go-hellogsm 이하 process)

@@ -13,9 +13,9 @@ func Run(applicationProperties internal.ApplicationProperties, jobs []string) {
 		case internal.SecondEvaluationJob:
 			secondEvaluationJob := BuildSecondEvaluationJob(applicationProperties)
 			secondEvaluationJob.Start()
-		case internal.DepartmentAssignmentJob:
-			departmentAssignmentJob := BuildDepartmentAssignmentJob(applicationProperties)
-			departmentAssignmentJob.Start()
+		case internal.MajorAssignmentJob:
+			MajorAssignmentJob := BuildMajorAssignmentJob()
+			MajorAssignmentJob.Start()
 		default:
 			doNothing()
 		}
