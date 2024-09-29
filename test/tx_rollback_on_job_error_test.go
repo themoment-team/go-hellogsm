@@ -1,9 +1,10 @@
 package test
 
 import (
-	"database/sql"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+	"log"
 	"testing"
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/internal"
@@ -46,8 +47,8 @@ func findAll() []interface{} {
 type TestStep struct {
 }
 
-func (t TestStep) Processor(bc *jobs.BatchContext, tx *sql.Tx) error {
-	err := doA(tx)
+func (t TestStep) Processor(bc *jobs.BatchContext, db *gorm.DB) error {
+	err := doA(db)
 	if err != nil {
 		return err
 	}
@@ -60,14 +61,14 @@ func (t TestStep) Processor(bc *jobs.BatchContext, tx *sql.Tx) error {
 	return nil
 }
 
-func doA(tx *sql.Tx) error {
-	_, err := tx.Exec("insert into tb_a values (1)")
-	return err
+func doA(db *gorm.DB) error {
+	return db.Exec("insert into tb_a values (1)").Error
 }
 
 // rollback 을 해야하는 에러를 반환한다.
 func doXReturnRollbackErr() jobs.RollbackNeededError {
-	return jobs.WrapRollbackNeededError("error occurred")
+	log.Println("doXReturnRollbackErr -> do something...")
+	return jobs.WrapRollbackNeededError(fmt.Errorf("error occurred"))
 }
 
 func getSteps() []jobs.Step {

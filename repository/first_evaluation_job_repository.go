@@ -1,10 +1,11 @@
 package repository
 
 import (
-	"database/sql"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
+	"themoment-team/go-hellogsm/jobs"
 )
 
 func CountOneseoByWantedScreening(wantedScreening string) int {
@@ -25,7 +26,7 @@ func CountOneseoByAppliedScreening(appliedScreening string) int {
 	return result
 }
 
-func SaveAppliedScreening(tx *sql.Tx, evaluateScreening []string, appliedScreening string, top int) {
+func SaveAppliedScreening(db *gorm.DB, evaluateScreening []string, appliedScreening string, top int) error {
 	query := fmt.Sprintf(`
 update tb_oneseo tbo
     join (select tbo_inner.oneseo_id
@@ -40,10 +41,7 @@ update tb_oneseo tbo
 set tbo.applied_screening = ?
 where tbo.oneseo_id is not null
 `)
-	_, err := tx.Exec(query, evaluateScreening, top, appliedScreening)
-	if err != nil {
-		panic(err)
-	}
+	return jobs.WrapRollbackNeededError(db.Exec(query, evaluateScreening, top, appliedScreening).Error)
 }
 
 func IsAppliedScreeningAllNull() bool {

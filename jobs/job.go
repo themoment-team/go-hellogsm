@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/service"
@@ -29,12 +30,8 @@ func (job *SimpleJob) Name() string {
 }
 
 func (job *SimpleJob) Start() {
-	db, _ := configs.MyDB.DB()
-	txManager := service.NewTransactionManager(db)
-	tx, err := txManager.BeginTx()
-	if err != nil {
-		WrapFatalErr(err)
-	}
+	options := sql.TxOptions{Isolation: sql.IsolationLevel(2), ReadOnly: false}
+	db := configs.MyDB.Begin(&options)
 
 	listener := *job.jobListener
 	if listener == nil {
@@ -47,19 +44,15 @@ func (job *SimpleJob) Start() {
 	stepContext := NewBatchContext()
 	// step 은 기본적으로 배치된 순서에 따라 실행한다.
 	for _, step := range job.steps {
-		err = step.Processor(stepContext, tx.(*sql.Tx))
+		err := step.Processor(stepContext, db)
 		if err != nil {
-			rollback := processRollbackIfNeeded(err, txManager, tx)
+			rollback := processRollbackIfNeeded(err, db)
 			if rollback {
 				// rollback 이 발생한 경우 더 이상 진행하지 않는다.
 				return
 			}
 		}
-
-		err = txManager.Commit(tx)
-		if err != nil {
-			WrapFatalErr(err)
-		}
+		db.Commit()
 	}
 }
 
@@ -89,14 +82,11 @@ func (l DefaultJobListener) AfterJob() {
 	log.Println(endMsg)
 }
 
-func processRollbackIfNeeded(err error, txManager service.TransactionManager, tx interface{}) bool {
+func processRollbackIfNeeded(err error, db *gorm.DB) bool {
 	var rollbackNeededError RollbackNeededError
 	if errors.As(err, &rollbackNeededError) {
 		log.Println("error occurred and rollback.", err)
-		txRollbackErr := txManager.Rollback(tx)
-		if txRollbackErr != nil {
-			WrapFatalErr(txRollbackErr)
-		}
+		db.Rollback()
 		return true
 	} else {
 		log.Println("error occurred but not rollback.", err)
