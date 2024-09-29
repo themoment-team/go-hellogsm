@@ -49,8 +49,8 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *g
 		log.Println("일반학과배정이 진행됩니다.")
 	} else {
 		// 중도포기 지원자가 있다면 추가학과배정 진행
-		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(types.GeneralScreening, types.SpecialScreening)
-		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(types.ExtraAdmissionScreening, types.ExtraVeteransScreening)
+		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScreeningsAssignedMajor(types.GeneralScreening, types.SpecialScreening)
+		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScreeningsAssignedMajor(types.ExtraAdmissionScreening, types.ExtraVeteransScreening)
 		assignedMajor := makeAssignedMajor(
 			types.SWMajor-normalSwCount, types.IOTMajor-normalIotCount, types.AIMajor-normalAiCount,
 			types.ExtraMajor-extraSwCount-normalSwCount, types.ExtraMajor-extraIotCount-normalIotCount, types.ExtraMajor-extraAiCount-normalAiCount)
@@ -209,9 +209,12 @@ func makeMaxMajor() map[string]map[types.Major]int {
 }
 
 func validFinalPassApplicant() {
-	count := repository.CountFinalTestPassApplicant()
-	maxCount := types.GeneralSpecialSuccessfulApplicantOf2E + types.ExtraAdmissionSuccessfulApplicantOf2E + types.ExtraVeteransSuccessfulApplicantOf2E
-	if count > maxCount {
-		panic("발생할 수 없는 상황입니다. 최종합격한 지원자의 수가 정원을 초과합니다.")
+	normalCount := repository.CountFinalTestPassNormalApplicant()
+	extraCount := repository.CountFinalTestPassExtraApplicant()
+	if normalCount > types.GeneralSpecialSuccessfulApplicantOf2E {
+		panic("발생할 수 없는 상황입니다. 최종합격한 일반전형, 사회통합전형의 지원자의 수가 정원을 초과합니다.")
+	}
+	if extraCount > types.ExtraAdmissionSuccessfulApplicantOf2E+types.ExtraVeteransSuccessfulApplicantOf2E {
+		panic("발생할 수 없는 상황입니다. 최종합격한 정원 외 특별전형의 지원자의 수가 정원을 초과합니다.")
 	}
 }
