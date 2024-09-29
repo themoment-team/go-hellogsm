@@ -34,12 +34,14 @@ func BuildMajorAssignmentJob() *jobs.SimpleJob {
 }
 
 func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
+	// 시작 전 데이터 검증
+	validFinalPassApplicant()
+
 	giveUpCount := repository.CountByGiveUpApplicant()
 
 	// 각 학과 별 남은 자리, 이후 실행할 작업에 대한 정보를 context에 담는다
-
-	// 중도포기 지원자가 없다면 일반학과배정 진행
 	if giveUpCount == 0 {
+		// 중도포기 지원자가 없다면 일반학과배정 진행
 		assignedMajor := makeAssignedMajor(0, 0, 0, 0, 0, 0)
 		context.Put("assignedMajor", assignedMajor)
 
@@ -204,4 +206,12 @@ func makeMaxMajor() map[string]map[types.Major]int {
 	maxMajor[types.EXTRA][types.AI] = 2
 
 	return maxMajor
+}
+
+func validFinalPassApplicant() {
+	count := repository.CountFinalTestPassApplicant()
+	maxCount := types.GeneralSpecialSuccessfulApplicantOf2E + types.ExtraAdmissionSuccessfulApplicantOf2E + types.ExtraVeteransSuccessfulApplicantOf2E
+	if count > maxCount {
+		panic("발생할 수 없는 상황입니다. 최종합격한 지원자의 수가 정원을 초과합니다.")
+	}
 }

@@ -23,6 +23,19 @@ func CountByGiveUpApplicant() int {
 	return result
 }
 
+func CountFinalTestPassApplicant() int {
+	result := 0
+	tx := configs.MyDB.Raw(`
+		SELECT COALESCE(COUNT(*), 0) 
+		FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
+		WHERE tr.second_test_pass_yn = 'YES'  
+	`).Scan(&result)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+	return result
+}
+
 func QueryByScrenningsAssignedMajor(firstScreening types.Screening, secondScreening types.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
