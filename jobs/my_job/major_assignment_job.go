@@ -2,6 +2,7 @@ package my_job
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"log"
 	"math"
 	"themoment-team/go-hellogsm/internal"
@@ -30,7 +31,7 @@ func BuildMajorAssignmentJob() *jobs.SimpleJob {
 	return jobs.NewSimpleJob(internal.MajorAssignmentJob, getMajorAssignmentSteps(), nil)
 }
 
-func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
+func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
 	giveUpCount := repository.CountByGiveUpApplicant()
 
 	// 각 학과 별 남은 자리, 이후 실행할 작업에 대한 정보를 context에 담는다
@@ -57,11 +58,13 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
 			"정원 외 특별전형: ", extraSwCount+extraIotCount+extraAiCount, "개",
 			"의 남은 자리를 대상으로 추가학과배정이 진행됩니다.")
 	}
+
+	return nil
 }
 
 var updatedMemberIds []int
 
-func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
+func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
 
 	statusInterface := context.Get("status")
 	assignedMajorInterface := context.Get("assignedMajor")
@@ -70,13 +73,13 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 	assignedMajor, ok := assignedMajorInterface.(map[string]map[jobs.Major]int)
 	if !ok {
 		log.Println("assignedMajorInterface의 타입이 올바르지 않습니다.")
-		return
+		return nil
 	}
 
 	status, ok := statusInterface.(MajorAssignmentStatus)
 	if !ok {
 		log.Println("status의 타입이 올바르지 않습니다.")
-		return
+		return nil
 	}
 
 	// 각 학과 별 정원
@@ -95,7 +98,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 
 	if err != nil {
 		log.Println(err)
-		return
+		return nil
 	}
 
 	for _, applicant := range targetApplicant {
@@ -116,12 +119,22 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 			decideMajor, err = assign(jobs.EXTRA, first, second, third, assignedMajor, maxMajor, status)
 		}
 
+		var rollBackNeededError jobs.RollbackNeededError
+		if err != nil {
+			if errors.As(err, &rollBackNeededError) {
+				// 학과 배정 중 에러가 발생해 롤백
+				return err
+			} else {
+				break
+			}
+		}
+
 		// 배정된 학과를 반영
-		if err == nil {
-			updatedMemberIds = append(updatedMemberIds, memberId)
-			repository.UpdateDecideMajor(decideMajor, memberId)
-		} else {
-			break
+		updatedMemberIds = append(updatedMemberIds, memberId)
+		updateMajorError := repository.UpdateDecideMajor(db, decideMajor, memberId)
+		if updateMajorError != nil {
+			// 배정된 학과 반영 중 에러가 발생해 롤백
+			return updateMajorError
 		}
 	}
 
@@ -131,6 +144,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 		log.Println(len(updatedMemberIds), "명이 추가로 학과에 배정되었습니다. 추가학과배정 종료")
 	}
 
+	return nil
 }
 
 func assign(
@@ -148,9 +162,7 @@ func assign(
 		return third, nil
 	} else {
 		if status == NORMAL_ASSIGNED {
-			log.Println("DecideMajor 롤백을 진행합니다.")
-			repository.RollBackDecideMajor(updatedMemberIds)
-			panic("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
+			return "", jobs.WrapExpectedActualIsDiffError("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
 		} else {
 			return "", errors.New("학과가 배정되지 않았습니다")
 		}

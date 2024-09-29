@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	"themoment-team/go-hellogsm/jobs"
@@ -159,30 +161,12 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
-func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
-	tx := configs.MyDB.Exec(`
+func UpdateDecideMajor(db *gorm.DB, decideMajor jobs.Major, memberId int) error {
+	query := fmt.Sprintf(`
 		UPDATE tb_oneseo 
 		SET decided_major = ?
 		WHERE member_id = ?
-	`, decideMajor, memberId)
+	`)
 
-	if tx.Error != nil {
-		log.Println("배정된 학과 반영에 실패했습니다. ", tx.Error)
-	}
-}
-
-func RollBackDecideMajor(updatedMemberIds []int) {
-	if len(updatedMemberIds) == 0 {
-		return
-	}
-
-	tx := configs.MyDB.Exec(`
-		UPDATE tb_oneseo 
-		SET decided_major = NULL 
-		WHERE member_id IN (?)
-	`, updatedMemberIds)
-
-	if tx.Error != nil {
-		log.Println("DecideMajor 롤백에 실패했습니다. ", tx.Error)
-	}
+	return jobs.WrapRollbackNeededError(db.Exec(query, decideMajor, memberId).Error)
 }
