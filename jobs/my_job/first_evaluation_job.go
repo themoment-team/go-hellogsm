@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"log"
+	error2 "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
@@ -95,7 +96,7 @@ func canNextEvaluation(to jobs.Screening, from jobs.Screening) error {
 func validateToScreening(to jobs.Screening) error {
 	isNull := repository.IsAppliedScreeningAllNullBy(string(to))
 	if isNull == false {
-		return jobs.WrapExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
+		return error2.WrapExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
 	}
 	return nil
 }
@@ -105,7 +106,7 @@ func validateToScreening(to jobs.Screening) error {
 func beforeAll() error {
 	isAllNull := repository.IsAppliedScreeningAllNull()
 	if isAllNull == false {
-		return jobs.WrapExpectedActualIsDiffError("적용전형은 모두 null인 상태")
+		return error2.WrapExpectedActualIsDiffError("적용전형은 모두 null인 상태")
 	}
 
 	return nil

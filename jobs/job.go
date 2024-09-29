@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
+	error2 "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/service"
 	"time"
 )
@@ -83,7 +84,7 @@ func (l DefaultJobListener) AfterJob() {
 }
 
 func processRollbackIfNeeded(err error, db *gorm.DB) bool {
-	var rollbackNeededError RollbackNeededError
+	var rollbackNeededError error2.RollbackNeededError
 	if errors.As(err, &rollbackNeededError) {
 		log.Println("error occurred and rollback.", err)
 		db.Rollback()

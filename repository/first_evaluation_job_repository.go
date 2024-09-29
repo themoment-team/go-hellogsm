@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
-	"themoment-team/go-hellogsm/jobs"
+	e "themoment-team/go-hellogsm/error"
 )
 
 func CountOneseoByWantedScreening(wantedScreening string) int {
@@ -41,7 +41,7 @@ update tb_oneseo tbo
 set tbo.applied_screening = ?
 where tbo.oneseo_id is not null
 `)
-	return jobs.WrapRollbackNeededError(db.Exec(query, evaluateScreening, top, appliedScreening).Error)
+	return e.WrapRollbackNeededError(db.Exec(query, evaluateScreening, top, appliedScreening).Error)
 }
 
 func IsAppliedScreeningAllNull() bool {

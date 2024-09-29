@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"math"
+	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
@@ -45,11 +46,11 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *g
 		log.Println("일반학과배정이 진행됩니다.")
 	} else {
 		// 중도포기 지원자가 있다면 추가학과배정 진행
-		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(jobs.GeneralScreening, jobs.SpecialScreening)
-		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening)
+		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(repository.Screening(jobs.GeneralScreening), repository.Screening(jobs.SpecialScreening))
+		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(repository.Screening(jobs.ExtraAdmissionScreening), repository.Screening(jobs.ExtraVeteransScreening))
 		assignedMajor := makeAssignedMajor(
-			jobs.SWMajor-normalSwCount, jobs.IOTMajor-normalIotCount, jobs.AIMajor-normalAiCount,
-			jobs.ExtraMajor-extraSwCount-normalSwCount, jobs.ExtraMajor-extraIotCount-normalIotCount, jobs.ExtraMajor-extraAiCount-normalAiCount)
+			repository.SWMajor-normalSwCount, repository.IOTMajor-normalIotCount, repository.AIMajor-normalAiCount,
+			repository.ExtraMajor-extraSwCount-normalSwCount, repository.ExtraMajor-extraIotCount-normalIotCount, repository.ExtraMajor-extraAiCount-normalAiCount)
 		context.Put("assignedMajor", assignedMajor)
 
 		context.Put("status", ADDITIONAL_ASSIGNED)
@@ -70,7 +71,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 	assignedMajorInterface := context.Get("assignedMajor")
 
 	// 각 학과 별 남은 자리
-	assignedMajor, ok := assignedMajorInterface.(map[string]map[jobs.Major]int)
+	assignedMajor, ok := assignedMajorInterface.(map[string]map[repository.Major]int)
 	if !ok {
 		log.Println("assignedMajorInterface의 타입이 올바르지 않습니다.")
 		return nil
@@ -109,17 +110,17 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 		second := applicant.SecondDesiredMajor
 		third := applicant.ThirdDesiredMajor
 
-		var decideMajor jobs.Major
+		var decideMajor repository.Major
 		var err error
 
 		switch applicant.AppliedScreening {
-		case jobs.GeneralScreening, jobs.SpecialScreening:
-			decideMajor, err = assign(jobs.NORMAL, first, second, third, assignedMajor, maxMajor, status)
-		case jobs.ExtraVeteransScreening, jobs.ExtraAdmissionScreening:
-			decideMajor, err = assign(jobs.EXTRA, first, second, third, assignedMajor, maxMajor, status)
+		case repository.GeneralScreening, repository.SpecialScreening:
+			decideMajor, err = assign(repository.NORMAL, first, second, third, assignedMajor, maxMajor, status)
+		case repository.ExtraVeteransScreening, repository.ExtraAdmissionScreening:
+			decideMajor, err = assign(repository.EXTRA, first, second, third, assignedMajor, maxMajor, status)
 		}
 
-		var rollBackNeededError jobs.RollbackNeededError
+		var rollBackNeededError e.RollbackNeededError
 		if err != nil {
 			if errors.As(err, &rollBackNeededError) {
 				// 학과 배정 중 에러가 발생해 롤백
@@ -148,9 +149,9 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 }
 
 func assign(
-	key string, first jobs.Major, second jobs.Major, third jobs.Major,
-	assignedMajor map[string]map[jobs.Major]int, maxMajor map[string]map[jobs.Major]int, status MajorAssignmentStatus,
-) (jobs.Major, error) {
+	key string, first repository.Major, second repository.Major, third repository.Major,
+	assignedMajor map[string]map[repository.Major]int, maxMajor map[string]map[repository.Major]int, status MajorAssignmentStatus,
+) (repository.Major, error) {
 	if assignedMajor[key][first] < maxMajor[key][first] {
 		assignedMajor[key][first]++
 		return first, nil
@@ -162,7 +163,7 @@ func assign(
 		return third, nil
 	} else {
 		if status == NORMAL_ASSIGNED {
-			return "", jobs.WrapExpectedActualIsDiffError("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
+			return "", e.WrapExpectedActualIsDiffError("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
 		} else {
 			return "", errors.New("학과가 배정되지 않았습니다")
 		}
@@ -172,34 +173,34 @@ func assign(
 func makeAssignedMajor(
 	normalSw int, normalIot int, normalAi int,
 	ExtraSw int, ExtraIot int, ExtraAi int,
-) map[string]map[jobs.Major]int {
-	assignedMajor := make(map[string]map[jobs.Major]int)
+) map[string]map[repository.Major]int {
+	assignedMajor := make(map[string]map[repository.Major]int)
 
-	assignedMajor[jobs.NORMAL] = make(map[jobs.Major]int)
-	assignedMajor[jobs.EXTRA] = make(map[jobs.Major]int)
+	assignedMajor[repository.NORMAL] = make(map[repository.Major]int)
+	assignedMajor[repository.EXTRA] = make(map[repository.Major]int)
 
-	assignedMajor[jobs.NORMAL][jobs.SW] = normalSw
-	assignedMajor[jobs.NORMAL][jobs.IOT] = normalIot
-	assignedMajor[jobs.NORMAL][jobs.AI] = normalAi
-	assignedMajor[jobs.EXTRA][jobs.SW] = int(math.Max(0, float64(ExtraSw)))
-	assignedMajor[jobs.EXTRA][jobs.IOT] = int(math.Max(0, float64(ExtraIot)))
-	assignedMajor[jobs.EXTRA][jobs.AI] = int(math.Max(0, float64(ExtraAi)))
+	assignedMajor[repository.NORMAL][repository.SW] = normalSw
+	assignedMajor[repository.NORMAL][repository.IOT] = normalIot
+	assignedMajor[repository.NORMAL][repository.AI] = normalAi
+	assignedMajor[repository.EXTRA][repository.SW] = int(math.Max(0, float64(ExtraSw)))
+	assignedMajor[repository.EXTRA][repository.IOT] = int(math.Max(0, float64(ExtraIot)))
+	assignedMajor[repository.EXTRA][repository.AI] = int(math.Max(0, float64(ExtraAi)))
 
 	return assignedMajor
 }
 
-func makeMaxMajor() map[string]map[jobs.Major]int {
-	maxMajor := make(map[string]map[jobs.Major]int)
+func makeMaxMajor() map[string]map[repository.Major]int {
+	maxMajor := make(map[string]map[repository.Major]int)
 
-	maxMajor[jobs.NORMAL] = make(map[jobs.Major]int)
-	maxMajor[jobs.EXTRA] = make(map[jobs.Major]int)
+	maxMajor[repository.NORMAL] = make(map[repository.Major]int)
+	maxMajor[repository.EXTRA] = make(map[repository.Major]int)
 
-	maxMajor[jobs.NORMAL][jobs.SW] = jobs.SWMajor
-	maxMajor[jobs.NORMAL][jobs.IOT] = jobs.IOTMajor
-	maxMajor[jobs.NORMAL][jobs.AI] = jobs.AIMajor
-	maxMajor[jobs.EXTRA][jobs.SW] = 2
-	maxMajor[jobs.EXTRA][jobs.IOT] = 2
-	maxMajor[jobs.EXTRA][jobs.AI] = 2
+	maxMajor[repository.NORMAL][repository.SW] = repository.SWMajor
+	maxMajor[repository.NORMAL][repository.IOT] = repository.IOTMajor
+	maxMajor[repository.NORMAL][repository.AI] = repository.AIMajor
+	maxMajor[repository.EXTRA][repository.SW] = 2
+	maxMajor[repository.EXTRA][repository.IOT] = 2
+	maxMajor[repository.EXTRA][repository.AI] = 2
 
 	return maxMajor
 }
