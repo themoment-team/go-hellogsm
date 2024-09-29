@@ -16,21 +16,21 @@ const (
 	ADDITIONAL_ASSIGNED MajorAssignmentStatus = "ADDITIONAL_ASSIGNED"
 )
 
-type ConditionalAssignMajor struct {
+type ConditionalAssignMajorStep struct {
 }
 
-type ApplicantAssignMajor struct {
+type ApplicantAssignMajorStep struct {
 }
 
 func getMajorAssignmentSteps() []jobs.Step {
-	return []jobs.Step{&ConditionalAssignMajor{}, &ApplicantAssignMajor{}}
+	return []jobs.Step{&ConditionalAssignMajorStep{}, &ApplicantAssignMajorStep{}}
 }
 
 func BuildMajorAssignmentJob() *jobs.SimpleJob {
 	return jobs.NewSimpleJob(internal.MajorAssignmentJob, getMajorAssignmentSteps(), nil)
 }
 
-func (a *ConditionalAssignMajor) Processor(context *jobs.BatchContext) {
+func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
 	giveUpCount := repository.CountByGiveUpApplicant()
 
 	// 각 학과 별 남은 자리, 이후 실행할 작업에 대한 정보를 context에 담는다
@@ -61,7 +61,7 @@ func (a *ConditionalAssignMajor) Processor(context *jobs.BatchContext) {
 
 var updatedMemberIds []int
 
-func (s *ApplicantAssignMajor) Processor(context *jobs.BatchContext) {
+func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 
 	statusInterface := context.Get("status")
 	assignedMajorInterface := context.Get("assignedMajor")
