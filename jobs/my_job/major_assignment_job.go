@@ -9,6 +9,7 @@ import (
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
+	"themoment-team/go-hellogsm/types"
 )
 
 type MajorAssignmentStatus string
@@ -46,11 +47,11 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *g
 		log.Println("일반학과배정이 진행됩니다.")
 	} else {
 		// 중도포기 지원자가 있다면 추가학과배정 진행
-		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(repository.Screening(jobs.GeneralScreening), repository.Screening(jobs.SpecialScreening))
-		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(repository.Screening(jobs.ExtraAdmissionScreening), repository.Screening(jobs.ExtraVeteransScreening))
+		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(types.GeneralScreening, types.SpecialScreening)
+		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(types.ExtraAdmissionScreening, types.ExtraVeteransScreening)
 		assignedMajor := makeAssignedMajor(
-			repository.SWMajor-normalSwCount, repository.IOTMajor-normalIotCount, repository.AIMajor-normalAiCount,
-			repository.ExtraMajor-extraSwCount-normalSwCount, repository.ExtraMajor-extraIotCount-normalIotCount, repository.ExtraMajor-extraAiCount-normalAiCount)
+			types.SWMajor-normalSwCount, types.IOTMajor-normalIotCount, types.AIMajor-normalAiCount,
+			types.ExtraMajor-extraSwCount-normalSwCount, types.ExtraMajor-extraIotCount-normalIotCount, types.ExtraMajor-extraAiCount-normalAiCount)
 		context.Put("assignedMajor", assignedMajor)
 
 		context.Put("status", ADDITIONAL_ASSIGNED)
@@ -71,7 +72,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 	assignedMajorInterface := context.Get("assignedMajor")
 
 	// 각 학과 별 남은 자리
-	assignedMajor, ok := assignedMajorInterface.(map[string]map[repository.Major]int)
+	assignedMajor, ok := assignedMajorInterface.(map[string]map[types.Major]int)
 	if !ok {
 		log.Println("assignedMajorInterface의 타입이 올바르지 않습니다.")
 		return nil
@@ -86,7 +87,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 	// 각 학과 별 정원
 	maxMajor := makeMaxMajor()
 
-	var targetApplicant []repository.Applicant
+	var targetApplicant []types.Applicant
 	var err error
 
 	// 학과배정 상태에 맞는 base data set 초기화 (일반학과배정, 추가모집배정)
@@ -110,14 +111,14 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 		second := applicant.SecondDesiredMajor
 		third := applicant.ThirdDesiredMajor
 
-		var decideMajor repository.Major
+		var decideMajor types.Major
 		var err error
 
 		switch applicant.AppliedScreening {
-		case repository.GeneralScreening, repository.SpecialScreening:
-			decideMajor, err = assign(repository.NORMAL, first, second, third, assignedMajor, maxMajor, status)
-		case repository.ExtraVeteransScreening, repository.ExtraAdmissionScreening:
-			decideMajor, err = assign(repository.EXTRA, first, second, third, assignedMajor, maxMajor, status)
+		case types.GeneralScreening, types.SpecialScreening:
+			decideMajor, err = assign(types.NORMAL, first, second, third, assignedMajor, maxMajor, status)
+		case types.ExtraVeteransScreening, types.ExtraAdmissionScreening:
+			decideMajor, err = assign(types.EXTRA, first, second, third, assignedMajor, maxMajor, status)
 		}
 
 		var rollBackNeededError e.RollbackNeededError
@@ -149,9 +150,9 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gor
 }
 
 func assign(
-	key string, first repository.Major, second repository.Major, third repository.Major,
-	assignedMajor map[string]map[repository.Major]int, maxMajor map[string]map[repository.Major]int, status MajorAssignmentStatus,
-) (repository.Major, error) {
+	key string, first types.Major, second types.Major, third types.Major,
+	assignedMajor map[string]map[types.Major]int, maxMajor map[string]map[types.Major]int, status MajorAssignmentStatus,
+) (types.Major, error) {
 	if assignedMajor[key][first] < maxMajor[key][first] {
 		assignedMajor[key][first]++
 		return first, nil
@@ -173,34 +174,34 @@ func assign(
 func makeAssignedMajor(
 	normalSw int, normalIot int, normalAi int,
 	ExtraSw int, ExtraIot int, ExtraAi int,
-) map[string]map[repository.Major]int {
-	assignedMajor := make(map[string]map[repository.Major]int)
+) map[string]map[types.Major]int {
+	assignedMajor := make(map[string]map[types.Major]int)
 
-	assignedMajor[repository.NORMAL] = make(map[repository.Major]int)
-	assignedMajor[repository.EXTRA] = make(map[repository.Major]int)
+	assignedMajor[types.NORMAL] = make(map[types.Major]int)
+	assignedMajor[types.EXTRA] = make(map[types.Major]int)
 
-	assignedMajor[repository.NORMAL][repository.SW] = normalSw
-	assignedMajor[repository.NORMAL][repository.IOT] = normalIot
-	assignedMajor[repository.NORMAL][repository.AI] = normalAi
-	assignedMajor[repository.EXTRA][repository.SW] = int(math.Max(0, float64(ExtraSw)))
-	assignedMajor[repository.EXTRA][repository.IOT] = int(math.Max(0, float64(ExtraIot)))
-	assignedMajor[repository.EXTRA][repository.AI] = int(math.Max(0, float64(ExtraAi)))
+	assignedMajor[types.NORMAL][types.SW] = normalSw
+	assignedMajor[types.NORMAL][types.IOT] = normalIot
+	assignedMajor[types.NORMAL][types.AI] = normalAi
+	assignedMajor[types.EXTRA][types.SW] = int(math.Max(0, float64(ExtraSw)))
+	assignedMajor[types.EXTRA][types.IOT] = int(math.Max(0, float64(ExtraIot)))
+	assignedMajor[types.EXTRA][types.AI] = int(math.Max(0, float64(ExtraAi)))
 
 	return assignedMajor
 }
 
-func makeMaxMajor() map[string]map[repository.Major]int {
-	maxMajor := make(map[string]map[repository.Major]int)
+func makeMaxMajor() map[string]map[types.Major]int {
+	maxMajor := make(map[string]map[types.Major]int)
 
-	maxMajor[repository.NORMAL] = make(map[repository.Major]int)
-	maxMajor[repository.EXTRA] = make(map[repository.Major]int)
+	maxMajor[types.NORMAL] = make(map[types.Major]int)
+	maxMajor[types.EXTRA] = make(map[types.Major]int)
 
-	maxMajor[repository.NORMAL][repository.SW] = repository.SWMajor
-	maxMajor[repository.NORMAL][repository.IOT] = repository.IOTMajor
-	maxMajor[repository.NORMAL][repository.AI] = repository.AIMajor
-	maxMajor[repository.EXTRA][repository.SW] = 2
-	maxMajor[repository.EXTRA][repository.IOT] = 2
-	maxMajor[repository.EXTRA][repository.AI] = 2
+	maxMajor[types.NORMAL][types.SW] = types.SWMajor
+	maxMajor[types.NORMAL][types.IOT] = types.IOTMajor
+	maxMajor[types.NORMAL][types.AI] = types.AIMajor
+	maxMajor[types.EXTRA][types.SW] = 2
+	maxMajor[types.EXTRA][types.IOT] = 2
+	maxMajor[types.EXTRA][types.AI] = 2
 
 	return maxMajor
 }

@@ -6,40 +6,8 @@ import (
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/types"
 )
-
-type Screening string
-type Major string
-
-const (
-	GeneralScreening        Screening = "GENERAL"
-	SpecialScreening        Screening = "SPECIAL"
-	ExtraVeteransScreening  Screening = "EXTRA_VETERANS"
-	ExtraAdmissionScreening Screening = "EXTRA_ADMISSION"
-
-	// 학과 별 정원
-	SWMajor    = 36
-	IOTMajor   = 18
-	AIMajor    = 18
-	ExtraMajor = 2
-
-	// 학과
-	SW  Major = "SW"
-	IOT Major = "IOT"
-	AI  Major = "AI"
-
-	// 학과 배정시 정원외특별전형의 구분을 위한 값
-	NORMAL = "NORMAL"
-	EXTRA  = "EXTRA"
-)
-
-type Applicant struct {
-	MemberID           int       `json:"member_id"`
-	AppliedScreening   Screening `json:"applied_screening"`
-	FirstDesiredMajor  Major     `json:"first_desired_major"`
-	SecondDesiredMajor Major     `json:"second_desired_major"`
-	ThirdDesiredMajor  Major     `json:"third_desired_major"`
-}
 
 func CountByGiveUpApplicant() int {
 	result := 0
@@ -55,7 +23,7 @@ func CountByGiveUpApplicant() int {
 	return result
 }
 
-func QueryByScrenningsAssignedMajor(firstScreening Screening, secondScreening Screening) (int, int, int) {
+func QueryByScrenningsAssignedMajor(firstScreening types.Screening, secondScreening types.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
 	ai := 0
@@ -94,8 +62,8 @@ func QueryByScrenningsAssignedMajor(firstScreening Screening, secondScreening Sc
 	return sw, iot, ai
 }
 
-func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
-	var applicants []Applicant
+func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
+	var applicants []types.Applicant
 
 	rows, err := configs.MyDB.Raw(`
 		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
@@ -124,7 +92,7 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var applicant Applicant
+		var applicant types.Applicant
 		if err := rows.Scan(&applicant.MemberID, &applicant.AppliedScreening, &applicant.FirstDesiredMajor, &applicant.SecondDesiredMajor, &applicant.ThirdDesiredMajor); err != nil {
 			log.Println(err)
 			return err, nil
@@ -140,8 +108,8 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
-func QueryAllByAdditionalApplicant() (error, []Applicant) {
-	var applicants []Applicant
+func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
+	var applicants []types.Applicant
 
 	rows, err := configs.MyDB.Raw(`
 		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
@@ -170,7 +138,7 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var applicant Applicant
+		var applicant types.Applicant
 		if err := rows.Scan(&applicant.MemberID, &applicant.AppliedScreening, &applicant.FirstDesiredMajor, &applicant.SecondDesiredMajor, &applicant.ThirdDesiredMajor); err != nil {
 			log.Println(err)
 			return err, nil
@@ -186,7 +154,7 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
-func UpdateDecideMajor(db *gorm.DB, decideMajor Major, memberId int) error {
+func UpdateDecideMajor(db *gorm.DB, decideMajor types.Major, memberId int) error {
 	query := fmt.Sprintf(`
 		UPDATE tb_oneseo 
 		SET decided_major = ?

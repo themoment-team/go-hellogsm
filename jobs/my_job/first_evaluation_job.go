@@ -8,6 +8,7 @@ import (
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
+	"themoment-team/go-hellogsm/types"
 )
 
 // DecideAppliedScreeningStep 적용 전형 평가를 하는 Step 이다.
@@ -26,45 +27,45 @@ func BuildFirstEvaluationJob(properties internal.ApplicationProperties) *jobs.Si
 
 func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, db *gorm.DB) error {
 	// 시작 데이터 검증
-	err := canNextEvaluation(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionScreening)
+	err := canNextEvaluation(types.ExtraAdmissionScreening, types.ExtraAdmissionScreening)
 	if err != nil {
 		return err
 	}
 
 	// 정원 외 특별전형 평가
 	// 특례 대상
-	extraAdCount := repository.CountOneseoByAppliedScreening(string(jobs.ExtraAdmissionScreening))
-	logAppliedScreeningResult(jobs.ExtraAdmissionScreening, jobs.ExtraAdmissionSuccessfulApplicantOf1E, extraAdCount)
+	extraAdCount := repository.CountOneseoByAppliedScreening(string(types.ExtraAdmissionScreening))
+	logAppliedScreeningResult(types.ExtraAdmissionScreening, types.ExtraAdmissionSuccessfulApplicantOf1E, extraAdCount)
 	applyExtraAdScreening(db)
 	// 국가 보훈 대상
-	extraVeCount := repository.CountOneseoByAppliedScreening(string(jobs.ExtraVeteransScreening))
-	logAppliedScreeningResult(jobs.ExtraVeteransScreening, jobs.ExtraVeteransSuccessfulApplicantOf1E, extraVeCount)
+	extraVeCount := repository.CountOneseoByAppliedScreening(string(types.ExtraVeteransScreening))
+	logAppliedScreeningResult(types.ExtraVeteransScreening, types.ExtraVeteransSuccessfulApplicantOf1E, extraVeCount)
 	applyExtraVeScreening(db)
 
 	// 특별전형 평가 전 데이터 검증
-	err = canNextEvaluation(jobs.SpecialScreening, jobs.ExtraVeteransScreening)
+	err = canNextEvaluation(types.SpecialScreening, types.ExtraVeteransScreening)
 	if err != nil {
 		return err
 	}
 
 	// 특별전형 평가
-	specialWantedCount := repository.CountOneseoByWantedScreening(string(jobs.SpecialScreening))
-	logAppliedScreeningResult(jobs.SpecialScreening, jobs.SpecialSuccessfulApplicantOf1E, specialWantedCount)
+	specialWantedCount := repository.CountOneseoByWantedScreening(string(types.SpecialScreening))
+	logAppliedScreeningResult(types.SpecialScreening, types.SpecialSuccessfulApplicantOf1E, specialWantedCount)
 	applySpecialScreening(db)
 
 	// 일반전형 평가 전 데이터 검증
-	err = canNextEvaluation(jobs.GeneralScreening, jobs.SpecialScreening)
+	err = canNextEvaluation(types.GeneralScreening, types.SpecialScreening)
 	if err != nil {
 		return err
 	}
 
 	// 일반전형 평가
-	generalWantedCount := repository.CountOneseoByWantedScreening(string(jobs.GeneralScreening))
-	logAppliedScreeningResult(jobs.GeneralScreening, jobs.GeneralSuccessfulApplicantOf1E, generalWantedCount)
+	generalWantedCount := repository.CountOneseoByWantedScreening(string(types.GeneralScreening))
+	logAppliedScreeningResult(types.GeneralScreening, types.GeneralSuccessfulApplicantOf1E, generalWantedCount)
 	applyGeneralScreening(db)
 
 	// 평가 끝 데이터 검증
-	err = canNextEvaluation(jobs.GeneralScreening, jobs.GeneralScreening)
+	err = canNextEvaluation(types.GeneralScreening, types.GeneralScreening)
 	if err != nil {
 		return err
 	}
@@ -76,15 +77,15 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 
 // 잘못된 평가 방향에 대한 검증을 진행한다.
 // 데이터 꼬임을 방지하기 위한 검증을 진행한다.
-func canNextEvaluation(to jobs.Screening, from jobs.Screening) error {
+func canNextEvaluation(to types.Screening, from types.Screening) error {
 	switch {
-	case to == jobs.ExtraAdmissionScreening && from == jobs.ExtraAdmissionScreening:
+	case to == types.ExtraAdmissionScreening && from == types.ExtraAdmissionScreening:
 		return beforeAll()
-	case to == jobs.SpecialScreening && from == jobs.ExtraVeteransScreening:
+	case to == types.SpecialScreening && from == types.ExtraVeteransScreening:
 		return validateToScreening(to)
-	case to == jobs.GeneralScreening && from == jobs.SpecialScreening:
+	case to == types.GeneralScreening && from == types.SpecialScreening:
 		return validateToScreening(to)
-	case to == jobs.GeneralScreening && from == jobs.GeneralScreening:
+	case to == types.GeneralScreening && from == types.GeneralScreening:
 		return afterAll()
 	default:
 		return fmt.Errorf("정의되지 않은 방향입니다. 상세: to: [%s] from: [%s] 으로는 불가능", to, from)
@@ -93,7 +94,7 @@ func canNextEvaluation(to jobs.Screening, from jobs.Screening) error {
 
 // from -> to 검증의 경우,
 // 희망전형(to) 원서의 적용전형은 모두 null 을 보장 해야 함.
-func validateToScreening(to jobs.Screening) error {
+func validateToScreening(to types.Screening) error {
 	isNull := repository.IsAppliedScreeningAllNullBy(string(to))
 	if isNull == false {
 		return error2.WrapExpectedActualIsDiffError(fmt.Sprintf("희망전형의 [%s] 적용전형이 모두 null 상태", to))
@@ -122,9 +123,9 @@ func afterAll() error {
 func applyExtraAdScreening(db *gorm.DB) {
 	repository.SaveAppliedScreening(
 		db,
-		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening}),
-		string(jobs.ExtraAdmissionScreening),
-		jobs.ExtraAdmissionSuccessfulApplicantOf1E,
+		convertScreeningToStrArr([]types.Screening{types.ExtraAdmissionScreening}),
+		string(types.ExtraAdmissionScreening),
+		types.ExtraAdmissionSuccessfulApplicantOf1E,
 	)
 }
 
@@ -132,9 +133,9 @@ func applyExtraAdScreening(db *gorm.DB) {
 func applyExtraVeScreening(db *gorm.DB) {
 	repository.SaveAppliedScreening(
 		db,
-		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraVeteransScreening}),
-		string(jobs.ExtraVeteransScreening),
-		jobs.ExtraVeteransSuccessfulApplicantOf1E,
+		convertScreeningToStrArr([]types.Screening{types.ExtraVeteransScreening}),
+		string(types.ExtraVeteransScreening),
+		types.ExtraVeteransSuccessfulApplicantOf1E,
 	)
 }
 
@@ -142,9 +143,9 @@ func applyExtraVeScreening(db *gorm.DB) {
 func applySpecialScreening(db *gorm.DB) {
 	repository.SaveAppliedScreening(
 		db,
-		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening}),
-		string(jobs.SpecialScreening),
-		jobs.SpecialSuccessfulApplicantOf1E,
+		convertScreeningToStrArr([]types.Screening{types.ExtraAdmissionScreening, types.ExtraVeteransScreening, types.SpecialScreening}),
+		string(types.SpecialScreening),
+		types.SpecialSuccessfulApplicantOf1E,
 	)
 }
 
@@ -152,9 +153,9 @@ func applySpecialScreening(db *gorm.DB) {
 func applyGeneralScreening(db *gorm.DB) {
 	repository.SaveAppliedScreening(
 		db,
-		convertScreeningToStrArr([]jobs.Screening{jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening, jobs.SpecialScreening, jobs.GeneralScreening}),
-		string(jobs.GeneralScreening),
-		jobs.GeneralSuccessfulApplicantOf1E,
+		convertScreeningToStrArr([]types.Screening{types.ExtraAdmissionScreening, types.ExtraVeteransScreening, types.SpecialScreening, types.GeneralScreening}),
+		string(types.GeneralScreening),
+		types.GeneralSuccessfulApplicantOf1E,
 	)
 }
 
@@ -163,7 +164,7 @@ func decideFailedApplicants(db *gorm.DB) {
 	repository.SaveFirstTestPassYn()
 }
 
-func logAppliedScreeningResult(wantedScreening jobs.Screening, success1E int, applicantCount int) {
+func logAppliedScreeningResult(wantedScreening types.Screening, success1E int, applicantCount int) {
 	log.Printf("[%s]전형 희망 지원자 수 [%d]명 중 [%d]명을 [%s]전형으로 적용합니다.",
 		wantedScreening,
 		applicantCount,
@@ -177,7 +178,7 @@ func logAppliedScreeningResult(wantedScreening jobs.Screening, success1E int, ap
 	}
 }
 
-func convertScreeningToStrArr(jobScreening []jobs.Screening) []string {
+func convertScreeningToStrArr(jobScreening []types.Screening) []string {
 	strScreening := make([]string, len(jobScreening))
 	for i, screening := range jobScreening {
 		strScreening[i] = string(screening)
