@@ -20,7 +20,7 @@ func CountByGiveUpApplicant() int {
 	return result
 }
 
-func QueryByScrenningsRemainingMajor(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
+func QueryByScrenningsAssignedMajor(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
 	ai := 0
