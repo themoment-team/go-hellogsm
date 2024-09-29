@@ -158,7 +158,7 @@ func UpdateDecideMajor(db *gorm.DB, decideMajor types.Major, memberId int) error
 	query := fmt.Sprintf(`
 		UPDATE tb_oneseo 
 		SET decided_major = ?
-		WHERE member_id = ?
+		WHERE member_id = ?;
 	`)
 
 	return e.WrapRollbackNeededError(db.Exec(query, decideMajor, memberId).Error)

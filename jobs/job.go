@@ -53,8 +53,10 @@ func (job *SimpleJob) Start() {
 				return
 			}
 		}
-		db.Commit()
 	}
+
+	// step을 모두 완료한 후 commit
+	db.Commit()
 }
 
 type DefaultJobListener struct {
