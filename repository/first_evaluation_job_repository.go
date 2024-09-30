@@ -17,9 +17,9 @@ func CountOneseoByWantedScreening(wantedScreening string) int {
 	return result
 }
 
-func CountOneseoByAppliedScreening(appliedScreening string) int {
+func CountOneseoByAppliedScreening(wantedScreening string) int {
 	var result int
-	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening = ?", appliedScreening).Scan(&result)
+	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&result)
 	if tx.Error != nil {
 		log.Println(tx.Error.Error())
 	}
@@ -58,12 +58,12 @@ func IsAppliedScreeningAllNullBy(wantedScreening string) bool {
 	return totalCount == nullCount
 }
 
-func SaveFirstTestPassYn() {
+func SaveFirstTestPassYn(db *gorm.DB) error {
 	query := `
 update tb_entrance_test_result tbe
     join tb_oneseo tbo on tbe.oneseo_id = tbo.oneseo_id
 set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null, 'YES', 'NO')
 where tbo.oneseo_id is not null;
 `
-	configs.MyDB.Exec(query)
+	return e.WrapRollbackNeededError(db.Exec(query).Error)
 }

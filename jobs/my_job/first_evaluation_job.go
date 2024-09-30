@@ -71,7 +71,11 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 	}
 
 	// 합격/불합격자 구분 처리
-	decideFailedApplicants(db)
+	err = decideFailedApplicants(db)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -160,8 +164,8 @@ func applyGeneralScreening(db *gorm.DB) {
 }
 
 // 불합격자 처리.
-func decideFailedApplicants(db *gorm.DB) {
-	repository.SaveFirstTestPassYn()
+func decideFailedApplicants(db *gorm.DB) error {
+	return repository.SaveFirstTestPassYn(db)
 }
 
 func logAppliedScreeningResult(wantedScreening types.Screening, success1E int, applicantCount int) {
