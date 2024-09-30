@@ -7,7 +7,7 @@ import (
 	"log"
 	"testing"
 	"themoment-team/go-hellogsm/configs"
-	error2 "themoment-team/go-hellogsm/error"
+	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 )
@@ -67,9 +67,9 @@ func doA(db *gorm.DB) error {
 }
 
 // rollback 을 해야하는 에러를 반환한다.
-func doXReturnRollbackErr() error2.RollbackNeededError {
+func doXReturnRollbackErr() e.RollbackNeededError {
 	log.Println("doXReturnRollbackErr -> do something...")
-	return error2.WrapRollbackNeededError(fmt.Errorf("error occurred"))
+	return e.WrapRollbackNeededError(fmt.Errorf("error occurred"))
 }
 
 func getSteps() []jobs.Step {
