@@ -15,6 +15,9 @@ const (
 	Warn  NoticeLevel = "warn"
 	Error NoticeLevel = "error"
 
+	EnvDev  Env = "dev"
+	EnvProd Env = "prod"
+
 	apiKeyHeader = "x-hg-api-key"
 )
 
@@ -22,9 +25,24 @@ type Template struct {
 	Title       string      `json:"title"`
 	Content     string      `json:"content"`
 	NoticeLevel NoticeLevel `json:"noticeLevel"`
+	Env         Env         `json:"env"`
 }
 
 type NoticeLevel string
+type Env string
+
+func GetEnv() Env {
+	var env Env
+	if internal.GetActiveProfile().Value == internal.Local.Value ||
+		internal.GetActiveProfile().Value == internal.Stage.Value {
+		env = EnvDev
+	} else if internal.GetActiveProfile().Value == internal.Prod.Value {
+		env = EnvProd
+	} else {
+		panic("현재 설정되어있는 profile이 정상적이지 않습니다.")
+	}
+	return env
+}
 
 // PingRelayApi
 // 더모먼트팀 RelayAPI 로 Ping 요청을 보낸다.
