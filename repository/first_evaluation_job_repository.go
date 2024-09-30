@@ -17,15 +17,6 @@ func CountOneseoByWantedScreening(wantedScreening string) int {
 	return result
 }
 
-func CountOneseoByAppliedScreening(wantedScreening string) int {
-	var result int
-	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&result)
-	if tx.Error != nil {
-		log.Println(tx.Error.Error())
-	}
-	return result
-}
-
 func SaveAppliedScreening(db *gorm.DB, evaluateScreening []string, appliedScreening string, top int) error {
 	query := fmt.Sprintf(`
 update tb_oneseo tbo

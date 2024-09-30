@@ -34,11 +34,11 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 
 	// 정원 외 특별전형 평가
 	// 특례 대상
-	extraAdCount := repository.CountOneseoByAppliedScreening(string(types.ExtraAdmissionScreening))
+	extraAdCount := repository.CountOneseoByWantedScreening(string(types.ExtraAdmissionScreening))
 	logAppliedScreeningResult(types.ExtraAdmissionScreening, types.ExtraAdmissionSuccessfulApplicantOf1E, extraAdCount)
 	applyExtraAdScreening(db)
 	// 국가 보훈 대상
-	extraVeCount := repository.CountOneseoByAppliedScreening(string(types.ExtraVeteransScreening))
+	extraVeCount := repository.CountOneseoByWantedScreening(string(types.ExtraVeteransScreening))
 	logAppliedScreeningResult(types.ExtraVeteransScreening, types.ExtraVeteransSuccessfulApplicantOf1E, extraVeCount)
 	applyExtraVeScreening(db)
 
