@@ -54,7 +54,8 @@ func SaveFirstTestPassYn(db *gorm.DB) error {
 	query := `
 update tb_entrance_test_result tbe
     join tb_oneseo tbo on tbe.oneseo_id = tbo.oneseo_id
-set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', 'YES', 'NO')
+set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', 'YES', 'NO'),
+    tbo.pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', null, 'NO')
 where tbo.oneseo_id is not null;
 `
 	return e.WrapRollbackNeededError(db.Exec(query).Error)

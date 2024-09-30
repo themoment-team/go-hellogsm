@@ -71,7 +71,7 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 	}
 
 	// 합격/불합격자 구분 처리
-	err = decideFailedApplicants(db)
+	err = decidePassApplicants(db)
 	if err != nil {
 		return err
 	}
@@ -163,8 +163,9 @@ func applyGeneralScreening(db *gorm.DB) {
 	)
 }
 
-// 불합격자 처리.
-func decideFailedApplicants(db *gorm.DB) error {
+// 합격자/불합격자 처리.
+func decidePassApplicants(db *gorm.DB) error {
+	log.Println("지원자의 합격, 불합격 여부를 적용합니다.")
 	return repository.SaveFirstTestPassYn(db)
 }
 
