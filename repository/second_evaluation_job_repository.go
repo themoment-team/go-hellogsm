@@ -2,20 +2,24 @@ package repository
 
 import (
 	"themoment-team/go-hellogsm/configs"
+	e "themoment-team/go-hellogsm/error"
+
+	"gorm.io/gorm"
 )
 
-func UpdateSecondTestPassStatusForAbsentees() {
-	configs.MyDB.Exec(`
+func UpdateSecondTestPassStatusForAbsentees(db *gorm.DB) error {
+	query := (`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'NO'
 		WHERE first_test_pass_yn = 'YES' 
 		  AND (aptitude_evaluation_score IS NULL OR interview_score IS NULL)
 	`)
+
+	return e.WrapRollbackNeededError(db.Exec(query).Error)
 }
 
-func IsAllFirstPassUserHaveAppliedScreening() bool {
-	var result int
-	configs.MyDB.Raw(`
+func IsAllFirstPassUserHaveAppliedScreening(db *gorm.DB) (bool, error) {
+	query := (`
 		SELECT COUNT(*) 
 		FROM tb_oneseo 
 		WHERE applied_screening IS NULL 
@@ -24,30 +28,44 @@ func IsAllFirstPassUserHaveAppliedScreening() bool {
 			FROM tb_entrance_test_result 
 			WHERE first_test_pass_yn = 'YES'
 		)
-	`).Scan(&result)
-	return result < 1
+	`)
+
+	var result int
+	err := e.WrapRollbackNeededError(db.Raw(query).Scan(&result).Error)
+	if err != nil {
+		return false, err
+	}
+
+	return result < 1, nil
 }
 
-func IsAllAbsenteeFall() bool {
-	var absenteeCount int
-	var fallCount int
-
+func IsAllAbsenteeFall(db *gorm.DB) (bool, error) {
 	// 미응시자 count query
-	configs.MyDB.Raw(`
+	query := (`
 		SELECT COUNT(*) 
 		FROM tb_entrance_test_result 
 		WHERE first_test_pass_yn = 'YES' 
 		  AND (aptitude_evaluation_score IS NULL OR interview_score IS NULL)
-	`).Scan(&absenteeCount)
+	`)
+	var absenteeCount int
+	err := e.WrapRollbackNeededError(db.Raw(query).Scan(&absenteeCount).Error)
+	if err != nil {
+		return false, err
+	}
 
 	// 2차 전형 탈락자 count query
-	configs.MyDB.Raw(`
+	query = (`
 		SELECT COUNT(*) 
 		FROM tb_entrance_test_result 
 		WHERE second_test_pass_yn = 'NO'
-	`).Scan(&fallCount)
+	`)
+	var fallCount int
+	err = e.WrapRollbackNeededError(db.Raw(query).Scan(&fallCount).Error)
+	if err != nil {
+		return false, err
+	}
 
-	return absenteeCount == fallCount
+	return absenteeCount == fallCount, nil
 }
 
 // extra admission oneseo id조회 쿼리 (성적순으로 order)

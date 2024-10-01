@@ -31,25 +31,33 @@ func BuildSecondEvaluationJob(properties internal.ApplicationProperties) *jobs.S
 
 func (s *SecondEvaluationAbsenteeExclusionStep) Processor(context *jobs.BatchContext, db *gorm.DB) error { // 하나 트랜잭션으로 묶
 	// 처리 전 데이터 검증
-	err := PreCheckAbsenteeExclusion()
+	err := PreCheckAbsenteeExclusion(db)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	// 2차 전형 미응시자 탈락 처리
 	log.Printf("2차 전형(직무적성검사 or 심층면접) 미응시자를 탈락 처리합니다")
-	repository.UpdateSecondTestPassStatusForAbsentees()
+	err = repository.UpdateSecondTestPassStatusForAbsentees(db)
+	if err != nil {
+		return err
+	}
 
 	// 처리 후 데이터 검증
-	err = PostCheckAbsenteeExclusion()
+	err = PostCheckAbsenteeExclusion(db)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
+
+	return nil
 }
 
 // 1차 평가를 마친 data는 applied_screening이 존재햐야 한다.
-func PreCheckAbsenteeExclusion() error {
-	isAllNotNull := repository.IsAllFirstPassUserHaveAppliedScreening()
+func PreCheckAbsenteeExclusion(db *gorm.DB) error {
+	isAllNotNull, err := repository.IsAllFirstPassUserHaveAppliedScreening(db)
+	if err != nil {
+		return err
+	}
 	if isAllNotNull == false {
 		return e.WrapExpectedActualIsDiffError("1차 평가를 마친 data는 전부 applied_screening이 존재햐야 한다.")
 	}
@@ -58,8 +66,11 @@ func PreCheckAbsenteeExclusion() error {
 }
 
 // 2차 전형(직무적성검사 or 심층면접) 미응시자는 탈락처리 되어있다.
-func PostCheckAbsenteeExclusion() error {
-	isAllAbsenteeFall := repository.IsAllAbsenteeFall()
+func PostCheckAbsenteeExclusion(db *gorm.DB) error {
+	isAllAbsenteeFall, err := repository.IsAllAbsenteeFall(db)
+	if err != nil {
+		return err
+	}
 	if isAllAbsenteeFall == false {
 		return e.WrapExpectedActualIsDiffError("2차 전형(직무적성검사 or 심층면접) 미응시자는 전부 탈락처리 되어있다.")
 	}
