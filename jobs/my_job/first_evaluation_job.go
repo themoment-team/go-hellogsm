@@ -34,11 +34,11 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 
 	// 정원 외 특별전형 평가
 	// 특례 대상
-	extraAdCount := repository.CountOneseoByAppliedScreening(string(types.ExtraAdmissionScreening))
+	extraAdCount := repository.CountOneseoByWantedScreening(string(types.ExtraAdmissionScreening))
 	logAppliedScreeningResult(types.ExtraAdmissionScreening, types.ExtraAdmissionSuccessfulApplicantOf1E, extraAdCount)
 	applyExtraAdScreening(db)
 	// 국가 보훈 대상
-	extraVeCount := repository.CountOneseoByAppliedScreening(string(types.ExtraVeteransScreening))
+	extraVeCount := repository.CountOneseoByWantedScreening(string(types.ExtraVeteransScreening))
 	logAppliedScreeningResult(types.ExtraVeteransScreening, types.ExtraVeteransSuccessfulApplicantOf1E, extraVeCount)
 	applyExtraVeScreening(db)
 
@@ -71,7 +71,11 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 	}
 
 	// 합격/불합격자 구분 처리
-	decideFailedApplicants(db)
+	err = decidePassApplicants(db)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -159,9 +163,10 @@ func applyGeneralScreening(db *gorm.DB) {
 	)
 }
 
-// 불합격자 처리.
-func decideFailedApplicants(db *gorm.DB) {
-	repository.SaveFirstTestPassYn()
+// 합격자/불합격자 처리.
+func decidePassApplicants(db *gorm.DB) error {
+	log.Println("지원자의 합격, 불합격 여부를 적용합니다.")
+	return repository.SaveFirstTestPassYn(db)
 }
 
 func logAppliedScreeningResult(wantedScreening types.Screening, success1E int, applicantCount int) {
