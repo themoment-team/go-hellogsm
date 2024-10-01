@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
-	"themoment-team/go-hellogsm/jobs"
+	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/types"
 )
 
 func CountByGiveUpApplicant() int {
@@ -20,7 +23,35 @@ func CountByGiveUpApplicant() int {
 	return result
 }
 
-func QueryByScrenningsAssignedMajor(firstScreening jobs.Screening, secondScreening jobs.Screening) (int, int, int) {
+func CountFinalTestPassNormalApplicant() int {
+	result := 0
+	tx := configs.MyDB.Raw(`
+		SELECT COALESCE(COUNT(*), 0) 
+		FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
+		WHERE tr.second_test_pass_yn = 'YES' AND 
+		      (o.applied_screening = 'GENERAL' OR o.applied_screening = 'SPECIAL')
+	`).Scan(&result)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+	return result
+}
+
+func CountFinalTestPassExtraApplicant() int {
+	result := 0
+	tx := configs.MyDB.Raw(`
+		SELECT COALESCE(COUNT(*), 0) 
+		FROM tb_entrance_test_result tr JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id 
+		WHERE tr.second_test_pass_yn = 'YES' AND 
+		      (o.applied_screening = 'EXTRA_VETERANS' OR o.applied_screening = 'EXTRA_ADMISSION')
+	`).Scan(&result)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+	return result
+}
+
+func QueryByScreeningsAssignedMajor(firstScreening types.Screening, secondScreening types.Screening) (int, int, int) {
 	sw := 0
 	iot := 0
 	ai := 0
@@ -59,16 +90,8 @@ func QueryByScrenningsAssignedMajor(firstScreening jobs.Screening, secondScreeni
 	return sw, iot, ai
 }
 
-type Applicant struct {
-	MemberID           int            `json:"member_id"`
-	AppliedScreening   jobs.Screening `json:"applied_screening"`
-	FirstDesiredMajor  jobs.Major     `json:"first_desired_major"`
-	SecondDesiredMajor jobs.Major     `json:"second_desired_major"`
-	ThirdDesiredMajor  jobs.Major     `json:"third_desired_major"`
-}
-
-func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
-	var applicants []Applicant
+func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
+	var applicants []types.Applicant
 
 	rows, err := configs.MyDB.Raw(`
 		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
@@ -97,7 +120,7 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var applicant Applicant
+		var applicant types.Applicant
 		if err := rows.Scan(&applicant.MemberID, &applicant.AppliedScreening, &applicant.FirstDesiredMajor, &applicant.SecondDesiredMajor, &applicant.ThirdDesiredMajor); err != nil {
 			log.Println(err)
 			return err, nil
@@ -113,8 +136,8 @@ func QueryAllByFinalTestPassApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
-func QueryAllByAdditionalApplicant() (error, []Applicant) {
-	var applicants []Applicant
+func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
+	var applicants []types.Applicant
 
 	rows, err := configs.MyDB.Raw(`
 		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
@@ -143,7 +166,7 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var applicant Applicant
+		var applicant types.Applicant
 		if err := rows.Scan(&applicant.MemberID, &applicant.AppliedScreening, &applicant.FirstDesiredMajor, &applicant.SecondDesiredMajor, &applicant.ThirdDesiredMajor); err != nil {
 			log.Println(err)
 			return err, nil
@@ -159,30 +182,12 @@ func QueryAllByAdditionalApplicant() (error, []Applicant) {
 	return nil, applicants
 }
 
-func UpdateDecideMajor(decideMajor jobs.Major, memberId int) {
-	tx := configs.MyDB.Exec(`
+func UpdateDecideMajor(db *gorm.DB, decideMajor types.Major, memberId int) error {
+	query := fmt.Sprintf(`
 		UPDATE tb_oneseo 
 		SET decided_major = ?
-		WHERE member_id = ?
-	`, decideMajor, memberId)
+		WHERE member_id = ?;
+	`)
 
-	if tx.Error != nil {
-		log.Println("배정된 학과 반영에 실패했습니다. ", tx.Error)
-	}
-}
-
-func RollBackDecideMajor(updatedMemberIds []int) {
-	if len(updatedMemberIds) == 0 {
-		return
-	}
-
-	tx := configs.MyDB.Exec(`
-		UPDATE tb_oneseo 
-		SET decided_major = NULL 
-		WHERE member_id IN (?)
-	`, updatedMemberIds)
-
-	if tx.Error != nil {
-		log.Println("DecideMajor 롤백에 실패했습니다. ", tx.Error)
-	}
+	return e.WrapRollbackNeededError(db.Exec(query, decideMajor, memberId).Error)
 }

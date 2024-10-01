@@ -2,11 +2,14 @@ package my_job
 
 import (
 	"errors"
+	"gorm.io/gorm"
 	"log"
 	"math"
+	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
+	"themoment-team/go-hellogsm/types"
 )
 
 type MajorAssignmentStatus string
@@ -30,13 +33,15 @@ func BuildMajorAssignmentJob() *jobs.SimpleJob {
 	return jobs.NewSimpleJob(internal.MajorAssignmentJob, getMajorAssignmentSteps(), nil)
 }
 
-func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
+func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
+	// 시작 전 데이터 검증
+	validFinalPassApplicant()
+
 	giveUpCount := repository.CountByGiveUpApplicant()
 
 	// 각 학과 별 남은 자리, 이후 실행할 작업에 대한 정보를 context에 담는다
-
-	// 중도포기 지원자가 없다면 일반학과배정 진행
 	if giveUpCount == 0 {
+		// 중도포기 지원자가 없다면 일반학과배정 진행
 		assignedMajor := makeAssignedMajor(0, 0, 0, 0, 0, 0)
 		context.Put("assignedMajor", assignedMajor)
 
@@ -44,11 +49,11 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
 		log.Println("일반학과배정이 진행됩니다.")
 	} else {
 		// 중도포기 지원자가 있다면 추가학과배정 진행
-		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScrenningsAssignedMajor(jobs.GeneralScreening, jobs.SpecialScreening)
-		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScrenningsAssignedMajor(jobs.ExtraAdmissionScreening, jobs.ExtraVeteransScreening)
+		normalSwCount, normalIotCount, normalAiCount := repository.QueryByScreeningsAssignedMajor(types.GeneralScreening, types.SpecialScreening)
+		extraSwCount, extraIotCount, extraAiCount := repository.QueryByScreeningsAssignedMajor(types.ExtraAdmissionScreening, types.ExtraVeteransScreening)
 		assignedMajor := makeAssignedMajor(
-			jobs.SWMajor-normalSwCount, jobs.IOTMajor-normalIotCount, jobs.AIMajor-normalAiCount,
-			jobs.ExtraMajor-extraSwCount-normalSwCount, jobs.ExtraMajor-extraIotCount-normalIotCount, jobs.ExtraMajor-extraAiCount-normalAiCount)
+			types.SWMajor-normalSwCount, types.IOTMajor-normalIotCount, types.AIMajor-normalAiCount,
+			types.ExtraMajor-extraSwCount-normalSwCount, types.ExtraMajor-extraIotCount-normalIotCount, types.ExtraMajor-extraAiCount-normalAiCount)
 		context.Put("assignedMajor", assignedMajor)
 
 		context.Put("status", ADDITIONAL_ASSIGNED)
@@ -57,32 +62,34 @@ func (a *ConditionalAssignMajorStep) Processor(context *jobs.BatchContext) {
 			"정원 외 특별전형: ", extraSwCount+extraIotCount+extraAiCount, "개",
 			"의 남은 자리를 대상으로 추가학과배정이 진행됩니다.")
 	}
+
+	return nil
 }
 
 var updatedMemberIds []int
 
-func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
+func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
 
 	statusInterface := context.Get("status")
 	assignedMajorInterface := context.Get("assignedMajor")
 
 	// 각 학과 별 남은 자리
-	assignedMajor, ok := assignedMajorInterface.(map[string]map[jobs.Major]int)
+	assignedMajor, ok := assignedMajorInterface.(map[string]map[types.Major]int)
 	if !ok {
 		log.Println("assignedMajorInterface의 타입이 올바르지 않습니다.")
-		return
+		return nil
 	}
 
 	status, ok := statusInterface.(MajorAssignmentStatus)
 	if !ok {
 		log.Println("status의 타입이 올바르지 않습니다.")
-		return
+		return nil
 	}
 
 	// 각 학과 별 정원
 	maxMajor := makeMaxMajor()
 
-	var targetApplicant []repository.Applicant
+	var targetApplicant []types.Applicant
 	var err error
 
 	// 학과배정 상태에 맞는 base data set 초기화 (일반학과배정, 추가모집배정)
@@ -95,7 +102,7 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 
 	if err != nil {
 		log.Println(err)
-		return
+		return nil
 	}
 
 	for _, applicant := range targetApplicant {
@@ -106,22 +113,32 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 		second := applicant.SecondDesiredMajor
 		third := applicant.ThirdDesiredMajor
 
-		var decideMajor jobs.Major
+		var decideMajor types.Major
 		var err error
 
 		switch applicant.AppliedScreening {
-		case jobs.GeneralScreening, jobs.SpecialScreening:
-			decideMajor, err = assign(jobs.NORMAL, first, second, third, assignedMajor, maxMajor, status)
-		case jobs.ExtraVeteransScreening, jobs.ExtraAdmissionScreening:
-			decideMajor, err = assign(jobs.EXTRA, first, second, third, assignedMajor, maxMajor, status)
+		case types.GeneralScreening, types.SpecialScreening:
+			decideMajor, err = assign(types.NORMAL, first, second, third, assignedMajor, maxMajor, status)
+		case types.ExtraVeteransScreening, types.ExtraAdmissionScreening:
+			decideMajor, err = assign(types.EXTRA, first, second, third, assignedMajor, maxMajor, status)
+		}
+
+		var rollBackNeededError e.RollbackNeededError
+		if err != nil {
+			if errors.As(err, &rollBackNeededError) {
+				// 학과 배정 중 에러가 발생해 롤백
+				return err
+			} else {
+				break
+			}
 		}
 
 		// 배정된 학과를 반영
-		if err == nil {
-			updatedMemberIds = append(updatedMemberIds, memberId)
-			repository.UpdateDecideMajor(decideMajor, memberId)
-		} else {
-			break
+		updatedMemberIds = append(updatedMemberIds, memberId)
+		updateMajorError := repository.UpdateDecideMajor(db, decideMajor, memberId)
+		if updateMajorError != nil {
+			// 배정된 학과 반영 중 에러가 발생해 롤백
+			return updateMajorError
 		}
 	}
 
@@ -131,12 +148,13 @@ func (s *ApplicantAssignMajorStep) Processor(context *jobs.BatchContext) {
 		log.Println(len(updatedMemberIds), "명이 추가로 학과에 배정되었습니다. 추가학과배정 종료")
 	}
 
+	return nil
 }
 
 func assign(
-	key string, first jobs.Major, second jobs.Major, third jobs.Major,
-	assignedMajor map[string]map[jobs.Major]int, maxMajor map[string]map[jobs.Major]int, status MajorAssignmentStatus,
-) (jobs.Major, error) {
+	key string, first types.Major, second types.Major, third types.Major,
+	assignedMajor map[string]map[types.Major]int, maxMajor map[string]map[types.Major]int, status MajorAssignmentStatus,
+) (types.Major, error) {
 	if assignedMajor[key][first] < maxMajor[key][first] {
 		assignedMajor[key][first]++
 		return first, nil
@@ -148,9 +166,7 @@ func assign(
 		return third, nil
 	} else {
 		if status == NORMAL_ASSIGNED {
-			log.Println("DecideMajor 롤백을 진행합니다.")
-			repository.RollBackDecideMajor(updatedMemberIds)
-			panic("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
+			return "", e.WrapExpectedActualIsDiffError("일반학과배정시에는 발생할 수 없는 상황입니다. 모든 최종 합격자가 학과에 배정되어야 합니다.")
 		} else {
 			return "", errors.New("학과가 배정되지 않았습니다")
 		}
@@ -160,34 +176,45 @@ func assign(
 func makeAssignedMajor(
 	normalSw int, normalIot int, normalAi int,
 	ExtraSw int, ExtraIot int, ExtraAi int,
-) map[string]map[jobs.Major]int {
-	assignedMajor := make(map[string]map[jobs.Major]int)
+) map[string]map[types.Major]int {
+	assignedMajor := make(map[string]map[types.Major]int)
 
-	assignedMajor[jobs.NORMAL] = make(map[jobs.Major]int)
-	assignedMajor[jobs.EXTRA] = make(map[jobs.Major]int)
+	assignedMajor[types.NORMAL] = make(map[types.Major]int)
+	assignedMajor[types.EXTRA] = make(map[types.Major]int)
 
-	assignedMajor[jobs.NORMAL][jobs.SW] = normalSw
-	assignedMajor[jobs.NORMAL][jobs.IOT] = normalIot
-	assignedMajor[jobs.NORMAL][jobs.AI] = normalAi
-	assignedMajor[jobs.EXTRA][jobs.SW] = int(math.Max(0, float64(ExtraSw)))
-	assignedMajor[jobs.EXTRA][jobs.IOT] = int(math.Max(0, float64(ExtraIot)))
-	assignedMajor[jobs.EXTRA][jobs.AI] = int(math.Max(0, float64(ExtraAi)))
+	assignedMajor[types.NORMAL][types.SW] = normalSw
+	assignedMajor[types.NORMAL][types.IOT] = normalIot
+	assignedMajor[types.NORMAL][types.AI] = normalAi
+	assignedMajor[types.EXTRA][types.SW] = int(math.Max(0, float64(ExtraSw)))
+	assignedMajor[types.EXTRA][types.IOT] = int(math.Max(0, float64(ExtraIot)))
+	assignedMajor[types.EXTRA][types.AI] = int(math.Max(0, float64(ExtraAi)))
 
 	return assignedMajor
 }
 
-func makeMaxMajor() map[string]map[jobs.Major]int {
-	maxMajor := make(map[string]map[jobs.Major]int)
+func makeMaxMajor() map[string]map[types.Major]int {
+	maxMajor := make(map[string]map[types.Major]int)
 
-	maxMajor[jobs.NORMAL] = make(map[jobs.Major]int)
-	maxMajor[jobs.EXTRA] = make(map[jobs.Major]int)
+	maxMajor[types.NORMAL] = make(map[types.Major]int)
+	maxMajor[types.EXTRA] = make(map[types.Major]int)
 
-	maxMajor[jobs.NORMAL][jobs.SW] = jobs.SWMajor
-	maxMajor[jobs.NORMAL][jobs.IOT] = jobs.IOTMajor
-	maxMajor[jobs.NORMAL][jobs.AI] = jobs.AIMajor
-	maxMajor[jobs.EXTRA][jobs.SW] = 2
-	maxMajor[jobs.EXTRA][jobs.IOT] = 2
-	maxMajor[jobs.EXTRA][jobs.AI] = 2
+	maxMajor[types.NORMAL][types.SW] = types.SWMajor
+	maxMajor[types.NORMAL][types.IOT] = types.IOTMajor
+	maxMajor[types.NORMAL][types.AI] = types.AIMajor
+	maxMajor[types.EXTRA][types.SW] = 2
+	maxMajor[types.EXTRA][types.IOT] = 2
+	maxMajor[types.EXTRA][types.AI] = 2
 
 	return maxMajor
+}
+
+func validFinalPassApplicant() {
+	normalCount := repository.CountFinalTestPassNormalApplicant()
+	extraCount := repository.CountFinalTestPassExtraApplicant()
+	if normalCount > types.GeneralSpecialSuccessfulApplicantOf2E {
+		panic("발생할 수 없는 상황입니다. 최종합격한 일반전형, 사회통합전형의 지원자의 수가 정원을 초과합니다.")
+	}
+	if extraCount > types.ExtraAdmissionSuccessfulApplicantOf2E+types.ExtraVeteransSuccessfulApplicantOf2E {
+		panic("발생할 수 없는 상황입니다. 최종합격한 정원 외 특별전형의 지원자의 수가 정원을 초과합니다.")
+	}
 }

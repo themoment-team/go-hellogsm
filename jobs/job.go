@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
+	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/service"
 	"time"
 )
@@ -52,8 +53,10 @@ func (job *SimpleJob) Start() {
 				return
 			}
 		}
-		db.Commit()
 	}
+
+	// step을 모두 완료한 후 commit
+	db.Commit()
 }
 
 type DefaultJobListener struct {
@@ -83,7 +86,7 @@ func (l DefaultJobListener) AfterJob() {
 }
 
 func processRollbackIfNeeded(err error, db *gorm.DB) bool {
-	var rollbackNeededError RollbackNeededError
+	var rollbackNeededError e.RollbackNeededError
 	if errors.As(err, &rollbackNeededError) {
 		log.Println("error occurred and rollback.", err)
 		db.Rollback()

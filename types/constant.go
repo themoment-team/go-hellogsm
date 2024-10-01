@@ -1,7 +1,15 @@
-package jobs
+package types
 
 type Screening string
 type Major string
+
+type Applicant struct {
+	MemberID           int       `json:"member_id"`
+	AppliedScreening   Screening `json:"applied_screening"`
+	FirstDesiredMajor  Major     `json:"first_desired_major"`
+	SecondDesiredMajor Major     `json:"second_desired_major"`
+	ThirdDesiredMajor  Major     `json:"third_desired_major"`
+}
 
 const (
 	// 전형
