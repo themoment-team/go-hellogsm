@@ -70,6 +70,7 @@ func (l DefaultJobListener) BeforeJob() {
 		Title:       "배치 작업 시작 알림",
 		Content:     startMsg,
 		NoticeLevel: service.Info,
+		Env:         service.GetEnv(),
 	})
 	log.Println(startMsg)
 }
@@ -81,6 +82,7 @@ func (l DefaultJobListener) AfterJob() {
 		Title:       "배치 작업 종료 알림",
 		Content:     endMsg,
 		NoticeLevel: service.Info,
+		Env:         service.GetEnv(),
 	})
 	log.Println(endMsg)
 }
