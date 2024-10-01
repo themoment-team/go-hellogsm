@@ -10,7 +10,16 @@ import (
 
 func CountOneseoByWantedScreening(wantedScreening string) int {
 	var result int
-	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and real_oneseo_arrived_yn = 'YES'", wantedScreening).Scan(&result)
+	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&result)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+	return result
+}
+
+func CountOneseoByAppliedScreening(appliedScreening string) int {
+	var result int
+	tx := configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening = ?", appliedScreening).Scan(&result)
 	if tx.Error != nil {
 		log.Println(tx.Error.Error())
 	}
@@ -25,8 +34,7 @@ update tb_oneseo tbo
                    join tb_entrance_test_result tbe
                         on tbo_inner.oneseo_id = tbe.oneseo_id
           where tbo_inner.wanted_screening in ?
-            and tbo_inner.applied_screening is null 
-    		and real_oneseo_arrived_yn = 'YES'
+            and tbo_inner.applied_screening is null
           order by tbe.document_evaluation_score
           LIMIT ?) as limited_tbo
     on tbo.oneseo_id = limited_tbo.oneseo_id
@@ -38,25 +46,24 @@ where tbo.oneseo_id is not null
 
 func IsAppliedScreeningAllNull() bool {
 	var result int
-	configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening is not null and real_oneseo_arrived_yn = 'YES'").Scan(&result)
+	configs.MyDB.Raw("select count(*) from tb_oneseo where applied_screening is not null").Scan(&result)
 	return result < 1
 }
 
 func IsAppliedScreeningAllNullBy(wantedScreening string) bool {
 	var totalCount int
 	var nullCount int
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and real_oneseo_arrived_yn = 'YES'", wantedScreening).Scan(&totalCount)
-	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and applied_screening is null and real_oneseo_arrived_yn = 'YES'", wantedScreening).Scan(&nullCount)
+	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ?", wantedScreening).Scan(&totalCount)
+	configs.MyDB.Raw("select count(*) from tb_oneseo where wanted_screening = ? and applied_screening is null", wantedScreening).Scan(&nullCount)
 	return totalCount == nullCount
 }
 
-func SaveFirstTestPassYn(db *gorm.DB) error {
+func SaveFirstTestPassYn() {
 	query := `
 update tb_entrance_test_result tbe
     join tb_oneseo tbo on tbe.oneseo_id = tbo.oneseo_id
-set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', 'YES', 'NO'),
-    tbo.pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', null, 'NO')
+set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null, 'YES', 'NO')
 where tbo.oneseo_id is not null;
 `
-	return e.WrapRollbackNeededError(db.Exec(query).Error)
+	configs.MyDB.Exec(query)
 }
