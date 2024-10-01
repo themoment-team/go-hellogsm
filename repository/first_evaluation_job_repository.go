@@ -2,10 +2,11 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+
+	"gorm.io/gorm"
 )
 
 func CountOneseoByWantedScreening(wantedScreening string) int {

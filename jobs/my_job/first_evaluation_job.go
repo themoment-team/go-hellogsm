@@ -2,13 +2,14 @@ package my_job
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
 	"themoment-team/go-hellogsm/types"
+
+	"gorm.io/gorm"
 )
 
 // DecideAppliedScreeningStep 적용 전형 평가를 하는 Step 이다.

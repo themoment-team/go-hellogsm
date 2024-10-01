@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/service"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type SimpleJob struct {

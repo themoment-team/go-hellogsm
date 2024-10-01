@@ -2,14 +2,15 @@ package test
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 	"log"
 	"testing"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/internal"
 	"themoment-team/go-hellogsm/jobs"
+
+	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 func beforeTest() {
