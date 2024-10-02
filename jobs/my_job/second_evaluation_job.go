@@ -29,7 +29,7 @@ func BuildSecondEvaluationJob(properties internal.ApplicationProperties) *jobs.S
 	return jobs.NewSimpleJob(internal.SecondEvaluationJob, getSecondEvaluationSteps(), nil)
 }
 
-func (s *SecondEvaluationAbsenteeExclusionStep) Processor(context *jobs.BatchContext, db *gorm.DB) error { // 하나 트랜잭션으로 묶
+func (s *SecondEvaluationAbsenteeExclusionStep) Processor(context *jobs.BatchContext, db *gorm.DB) error {
 	// 처리 전 데이터 검증
 	err := PreCheckAbsenteeExclusion(db)
 	if err != nil {
