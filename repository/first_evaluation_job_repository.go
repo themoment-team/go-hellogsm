@@ -2,10 +2,11 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+
+	"gorm.io/gorm"
 )
 
 func CountOneseoByWantedScreening(wantedScreening string) int {
@@ -27,7 +28,7 @@ update tb_oneseo tbo
           where tbo_inner.wanted_screening in ?
             and tbo_inner.applied_screening is null 
     		and real_oneseo_arrived_yn = 'YES'
-          order by tbe.document_evaluation_score
+          order by tbe.document_evaluation_score DESC
           LIMIT ?) as limited_tbo
     on tbo.oneseo_id = limited_tbo.oneseo_id
 set tbo.applied_screening = ?
