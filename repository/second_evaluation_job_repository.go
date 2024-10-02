@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
 
 	"gorm.io/gorm"
@@ -69,9 +68,8 @@ func IsAllAbsenteeFall(db *gorm.DB) (bool, error) {
 }
 
 // extra admission oneseo id조회 쿼리 (성적순으로 order)
-func QueryExtraAdOneseoIds() []int {
-	var ids []int
-	configs.MyDB.Raw(`
+func QueryExtraAdOneseoIds(db *gorm.DB) ([]int, error) {
+	query := (`
 		SELECT o.oneseo_id 
 		FROM tb_oneseo o
 		JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
@@ -89,35 +87,51 @@ func QueryExtraAdOneseoIds() []int {
 			td.score_2_1 DESC, 
 			td.total_non_subjects_score DESC, 
 			m.birth ASC;
-	`).Scan(&ids)
+	`)
+	var ids []int
+	err := e.WrapRollbackNeededError(db.Raw(query).Scan(&ids).Error)
+	if err != nil {
+		return nil, err
+	}
 
-	return ids
+	return ids, nil
 }
 
 // extra admission limit명 이하일때 second_test = pass
-func UpdateSecondTestPassYnForExtraAdPass(passExtraAdOneseoIds []int) {
+func UpdateSecondTestPassYnForExtraAdPass(passExtraAdOneseoIds []int, db *gorm.DB) error {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Exec(`
+	query := (`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, passExtraAdOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, passExtraAdOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // extra admission limit명 초과일때 하위 n명 applied_screening = SPECIAL 설정 쿼리
-func UpdateAppliedScreeingForExtraAdFall(fallExtraAdOneseoIds []int) {
-	configs.MyDB.Exec(`
+func UpdateAppliedScreeingForExtraAdFall(fallExtraAdOneseoIds []int, db *gorm.DB) error {
+	query := (`
 		UPDATE tb_oneseo
 		SET applied_screening = 'SPECIAL'
 		WHERE oneseo_id IN ?
-	`, fallExtraAdOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, fallExtraAdOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // extra veteran oneseo id조회 쿼리 (성적순으로 order)
-func QueryExtraVeOneseoIds() []int {
-	var ids []int
-	configs.MyDB.Raw(`
+func QueryExtraVeOneseoIds(db *gorm.DB) ([]int, error) {
+	query := (`
 		SELECT o.oneseo_id 
 		FROM tb_oneseo o
 		JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
@@ -135,35 +149,51 @@ func QueryExtraVeOneseoIds() []int {
 			td.score_2_1 DESC, 
 			td.total_non_subjects_score DESC, 
 			m.birth ASC;
-	`).Scan(&ids)
+	`)
+	var ids []int
+	err := e.WrapRollbackNeededError(db.Raw(query).Scan(&ids).Error)
+	if err != nil {
+		return nil, err
+	}
 
-	return ids
+	return ids, nil
 }
 
 // extra veteran limit명 이하일때 second_test = pass
-func UpdateSecondTestPassYnForExtraVePass(passExtraVeOneseoIds []int) {
+func UpdateSecondTestPassYnForExtraVePass(passExtraVeOneseoIds []int, db *gorm.DB) error {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Exec(`
+	query := (`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, passExtraVeOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, passExtraVeOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // extra veteran limit명 초과일때 하위 n명 applied_screening = SPECIAL 설정 쿼리
-func UpdateAppliedScreeingForExtraVeFall(fallExtraVeOneseoIds []int) {
-	configs.MyDB.Exec(`
+func UpdateAppliedScreeingForExtraVeFall(fallExtraVeOneseoIds []int, db *gorm.DB) error {
+	query := (`
 		UPDATE tb_oneseo
 		SET applied_screening = 'SPECIAL'
 		WHERE oneseo_id IN ?
-	`, fallExtraVeOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, fallExtraVeOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // special oneseo id조회 쿼리 (성적순으로 order)
-func QuerySpecialOneseoIds() []int {
-	var ids []int
-	configs.MyDB.Raw(`
+func QuerySpecialOneseoIds(db *gorm.DB) ([]int, error) {
+	query := (`
 		SELECT o.oneseo_id 
 		FROM tb_oneseo o
 		JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
@@ -181,36 +211,53 @@ func QuerySpecialOneseoIds() []int {
 			td.score_2_1 DESC, 
 			td.total_non_subjects_score DESC, 
 			m.birth ASC;
-	`).Scan(&ids)
+	`)
+	var ids []int
+	err := e.WrapRollbackNeededError(db.Raw(query).Scan(&ids).Error)
+	if err != nil {
+		return nil, err
+	}
 
-	return ids
+	return ids, nil
 }
 
 // special limit명 이하일때 second_test = pass
-func UpdateSecondTestPassYnForSpecialPass(passSpecialOneseoIds []int) {
+func UpdateSecondTestPassYnForSpecialPass(passSpecialOneseoIds []int, db *gorm.DB) error {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Exec(`
+	query := (`
 		UPDATE tb_entrance_test_result
 		SET second_test_pass_yn = 'YES'
 		WHERE oneseo_id IN ?
-	`, passSpecialOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, passSpecialOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // special limit명 초과일때 하위 n명 applied_screening = general 설정 쿼리
-func UpdateAppliedScreeingForSpecialFall(fallSpecialOneseoIds []int) {
-	configs.MyDB.Exec(`
+func UpdateAppliedScreeingForSpecialFall(fallSpecialOneseoIds []int, db *gorm.DB) error {
+	query := (`
 		UPDATE tb_oneseo
 		SET applied_screening = 'GENERAL'
 		WHERE oneseo_id IN ?
-	`, fallSpecialOneseoIds)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, fallSpecialOneseoIds).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // general 성적 상위 n명(limit 호출쪽에서 능동적으로) second_test = pass & 나머지 지원자 탈락 처리
-func UpdateSecondTestPassYnForGeneral(generalPassLimit int) {
+func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 
 	// second_test_pass_yn = YES
-	configs.MyDB.Exec(`
+	query := (`
 		UPDATE tb_entrance_test_result tr
 		JOIN (
 			SELECT tr.entrance_test_result_id 
@@ -233,10 +280,14 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int) {
 			LIMIT ?
 		) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 		SET tr.second_test_pass_yn = 'YES';
-	`, generalPassLimit)
+	`)
+	err := e.WrapRollbackNeededError(db.Exec(query, generalPassLimit).Error)
+	if err != nil {
+		return err
+	}
 
 	// second_test_pass_yn = NO
-	configs.MyDB.Exec(`
+	query = (`
 		UPDATE tb_entrance_test_result tr
 		JOIN (
 			SELECT tr.entrance_test_result_id 
@@ -248,4 +299,10 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int) {
 		) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 		SET tr.second_test_pass_yn = 'NO';
 	`)
+	err = e.WrapRollbackNeededError(db.Exec(query).Error)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
