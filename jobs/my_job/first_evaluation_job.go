@@ -1,7 +1,6 @@
 package my_job
 
 import (
-	"errors"
 	"fmt"
 	"gorm.io/gorm"
 	"log"
@@ -77,7 +76,7 @@ func (s *DecideAppliedScreeningStep) Processor(batchContext *jobs.BatchContext, 
 		return err
 	}
 
-	return errors.New("123")
+	return nil
 }
 
 // 잘못된 평가 방향에 대한 검증을 진행한다.
