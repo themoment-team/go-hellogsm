@@ -5,8 +5,14 @@ import (
 	"log"
 )
 
-type FatalError error
-type ExpectedActualIsDiffError error
+type FatalError struct {
+	err error
+}
+
+type ExpectedActualIsDiffError struct {
+	err error
+}
+
 type RollbackNeededError struct {
 	err error
 }
@@ -25,5 +31,13 @@ func WrapFatalErr(err error) {
 }
 
 func (e RollbackNeededError) Error() string {
+	return e.err.Error()
+}
+
+func (e ExpectedActualIsDiffError) Error() string {
+	return e.err.Error()
+}
+
+func (e FatalError) Error() string {
 	return e.err.Error()
 }
