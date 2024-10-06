@@ -17,11 +17,14 @@ type RollbackNeededError struct {
 	err error
 }
 
-func WrapExpectedActualIsDiffError(expected string) *RollbackNeededError {
+func WrapExpectedActualIsDiffError(expected string) error {
 	return WrapRollbackNeededError(fmt.Errorf("기대 결과와 실제 결과가 다름. 기대 결과: [%s]", expected))
 }
 
-func WrapRollbackNeededError(err error) *RollbackNeededError {
+func WrapRollbackNeededError(err error) error {
+	if err == nil {
+		return nil
+	}
 	return &RollbackNeededError{err: err}
 }
 

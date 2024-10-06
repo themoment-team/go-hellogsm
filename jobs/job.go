@@ -88,7 +88,7 @@ func (l DefaultJobListener) AfterJob() {
 }
 
 func processRollbackIfNeeded(err error, db *gorm.DB) bool {
-	var rollbackNeededError e.RollbackNeededError
+	var rollbackNeededError *e.RollbackNeededError
 	if errors.As(err, &rollbackNeededError) {
 		log.Println("error occurred and rollback.", err)
 		db.Rollback()
