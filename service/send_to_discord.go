@@ -18,6 +18,9 @@ const (
 	EnvDev  Env = "dev"
 	EnvProd Env = "prod"
 
+	ChannelInfo Channel = "info"
+	ChannelMon  Channel = "mon"
+
 	apiKeyHeader = "x-hg-api-key"
 )
 
@@ -25,10 +28,12 @@ type Template struct {
 	Title       string      `json:"title"`
 	Content     string      `json:"content"`
 	NoticeLevel NoticeLevel `json:"noticeLevel"`
+	Channel     Channel     `json:"channel"`
 	Env         Env         `json:"env"`
 }
 
 type NoticeLevel string
+type Channel string
 type Env string
 
 func GetEnv() Env {
