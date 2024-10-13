@@ -48,7 +48,12 @@ func SaveAppliedScreening(db *gorm.DB, evaluateScreening []string, appliedScreen
 		SET tbo.applied_screening = ?
 		WHERE tbo.oneseo_id IS NOT NULL;
 `)
-	return e.WrapRollbackNeededError(db.Exec(query, evaluateScreening, top, appliedScreening).Error)
+	err := db.Exec(query, evaluateScreening, top, appliedScreening).Error
+	if err != nil {
+		return e.WrapRollbackNeededError(err)
+	}
+
+	return nil
 }
 
 func IsAppliedScreeningAllNull() bool {
@@ -73,5 +78,10 @@ set tbe.first_test_pass_yn = IF(tbo.applied_screening is not null and tbo.real_o
     tbo.pass_yn = IF(tbo.applied_screening is not null and tbo.real_oneseo_arrived_yn = 'YES', null, 'NO')
 where tbo.oneseo_id is not null;
 `
-	return e.WrapRollbackNeededError(db.Exec(query).Error)
+	err := db.Exec(query).Error
+	if err != nil {
+		return e.WrapRollbackNeededError(err)
+	}
+
+	return nil
 }

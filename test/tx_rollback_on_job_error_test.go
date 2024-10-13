@@ -67,7 +67,7 @@ func doA(db *gorm.DB) error {
 }
 
 // rollback 을 해야하는 에러를 반환한다.
-func doXReturnRollbackErr() *e.RollbackNeededError {
+func doXReturnRollbackErr() error {
 	log.Println("doXReturnRollbackErr -> do something...")
 	return e.WrapRollbackNeededError(fmt.Errorf("error occurred"))
 }
