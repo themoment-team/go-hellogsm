@@ -189,5 +189,10 @@ func UpdateDecideMajor(db *gorm.DB, decideMajor types.Major, memberId int) error
 		WHERE member_id = ?;
 	`)
 
-	return e.WrapRollbackNeededError(db.Exec(query, decideMajor, memberId).Error)
+	err := db.Exec(query, decideMajor, memberId).Error
+	if err != nil {
+		return e.WrapRollbackNeededError(err)
+	}
+
+	return nil
 }

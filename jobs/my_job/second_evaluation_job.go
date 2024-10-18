@@ -126,7 +126,7 @@ func (s *TotalEvaluationTopScoringApplicantsSelectionByScreeningStep) Processor(
 		specialOneseoIds,
 		types.SpecialSuccessfulApplicantOf2E,
 		repository.UpdateSecondTestPassYnForSpecialPass,
-		repository.UpdateAppliedScreeingForSpecialFall,
+		repository.UpdateAppliedScreeningForSpecialFall,
 		db,
 	)
 	if err != nil {
