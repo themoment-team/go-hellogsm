@@ -283,13 +283,13 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 					AND tr.second_test_pass_yn IS NULL
 				ORDER BY 
 					(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-					td.total_subjects_score DESC,
-					(td.score_3_2 + td.score_3_1) DESC,
-					(td.score_2_2 + td.score_2_1) DESC, 
-					td.score_2_2 DESC, 
-					td.score_2_1 DESC, 
-					td.total_non_subjects_score DESC, 
-					m.birth ASC
+					tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+					td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+					td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+					td.score_2_2 DESC,
+					td.score_2_1 DESC,
+					td.score_1_2 DESC,
+					td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 				LIMIT ?
 			) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 			JOIN tb_oneseo o ON subquery.oneseo_id = o.oneseo_id
