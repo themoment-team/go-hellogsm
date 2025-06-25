@@ -13,7 +13,7 @@ func UpdateSecondTestPassStatusForAbsentees(db *gorm.DB) error {
 			SET tbo.pass_yn = 'NO',
 				tbe.second_test_pass_yn = 'NO'
 			WHERE tbe.first_test_pass_yn = 'YES'
-				AND (tbe.aptitude_evaluation_score IS NULL OR tbe.interview_score IS NULL)
+				AND (tbe.competency_evaluation_score IS NULL OR tbe.interview_score IS NULL)
 		`
 
 	err := db.Exec(query).Error
@@ -51,7 +51,7 @@ func IsAllAbsenteeFall(db *gorm.DB) (bool, error) {
 			SELECT COUNT(*) 
 			FROM tb_entrance_test_result 
 			WHERE first_test_pass_yn = 'YES' 
-			  AND (aptitude_evaluation_score IS NULL OR interview_score IS NULL)
+			  AND (competency_evaluation_score IS NULL OR interview_score IS NULL)
 		`
 	var absenteeCount int
 	err := db.Raw(query).Scan(&absenteeCount).Error
@@ -89,14 +89,14 @@ func QueryExtraAdOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_ADMISSION' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+				td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+				td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+				td.score_2_2 DESC,
+				td.score_2_1 DESC,
+				td.score_1_2 DESC,
+				td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 		`
 	var ids []int
 	err := db.Raw(query).Scan(&ids).Error
@@ -152,14 +152,14 @@ func QueryExtraVeOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_VETERANS' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+				td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+				td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+				td.score_2_2 DESC,
+				td.score_2_1 DESC,
+				td.score_1_2 DESC,
+				td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 		`
 	var ids []int
 	err := db.Raw(query).Scan(&ids).Error
@@ -215,14 +215,14 @@ func QuerySpecialOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'SPECIAL'
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+				td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+				td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+				td.score_2_2 DESC,
+				td.score_2_1 DESC,
+				td.score_1_2 DESC,
+				td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 		`
 	var ids []int
 	err := db.Raw(query).Scan(&ids).Error
@@ -282,7 +282,7 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 					o.applied_screening = 'GENERAL'
 					AND tr.second_test_pass_yn IS NULL
 				ORDER BY 
-					(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+					(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
 					td.total_subjects_score DESC,
 					(td.score_3_2 + td.score_3_1) DESC,
 					(td.score_2_2 + td.score_2_1) DESC, 

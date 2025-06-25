@@ -103,14 +103,14 @@ func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
 		      o.entrance_intention_yn IS NULL AND 
 		      m.role = 'APPLICANT'
 		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		td.total_subjects_score DESC, 
-		(td.score_3_2 + td.score_3_1) DESC,
-		(td.score_2_2 + td.score_2_1) DESC, 
-		td.score_2_2 DESC, 
-		td.score_2_1 DESC, 
-		td.total_non_subjects_score DESC, 
-		m.birth ASC;
+		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+		tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+		td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+		td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+		td.score_2_2 DESC,
+		td.score_2_1 DESC,
+		td.score_1_2 DESC,
+		td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 	`).Rows()
 
 	if err != nil {
@@ -149,14 +149,14 @@ func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
 		      o.entrance_intention_yn IS NULL AND 
 		      m.role = 'APPLICANT'
 		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		td.total_subjects_score DESC, 
-		(td.score_3_2 + td.score_3_1) DESC,
-		(td.score_2_2 + td.score_2_1) DESC, 
-		td.score_2_2 DESC, 
-		td.score_2_1 DESC, 
-		td.total_non_subjects_score DESC, 
-		m.birth ASC;
+		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+		tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
+		td.general_subjects_score DESC, -- 일반교과성적이 우수한자
+		td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
+		td.score_2_2 DESC,
+		td.score_2_1 DESC,
+		td.score_1_2 DESC,
+		td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 	`).Rows()
 
 	if err != nil {
