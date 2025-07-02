@@ -6,6 +6,7 @@ import (
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/repository/shared"
 	"themoment-team/go-hellogsm/types"
 )
 
@@ -104,14 +105,8 @@ func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
 		      m.role = 'APPLICANT'
 		ORDER BY 
 		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
-		td.general_subjects_score DESC, -- 일반교과성적이 우수한자
-		td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
-		td.score_2_2 DESC,
-		td.score_2_1 DESC,
-		td.score_1_2 DESC,
-		td.total_non_subjects_score DESC -- 비교과성적이 우수한자
-	`).Rows()
+		? -- 동점자 처리기준 (TieBreakerQuery)
+	`, shared.FinalTieBreakerQuery).Rows()
 
 	if err != nil {
 		log.Println(err)
@@ -150,14 +145,8 @@ func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
 		      m.role = 'APPLICANT'
 		ORDER BY 
 		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-		tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
-		td.general_subjects_score DESC, -- 일반교과성적이 우수한자
-		td.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
-		td.score_2_2 DESC,
-		td.score_2_1 DESC,
-		td.score_1_2 DESC,
-		td.total_non_subjects_score DESC -- 비교과성적이 우수한자
-	`).Rows()
+		? -- 동점자 처리기준 (TieBreakerQuery)
+	`, shared.FinalTieBreakerQuery).Rows()
 
 	if err != nil {
 		log.Println(err)

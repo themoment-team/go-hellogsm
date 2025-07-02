@@ -5,6 +5,7 @@ import (
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/repository/shared"
 
 	"gorm.io/gorm"
 )
@@ -35,19 +36,14 @@ func SaveAppliedScreening(db *gorm.DB, evaluateScreening []string, appliedScreen
 			  AND tbo_inner.real_oneseo_arrived_yn = 'YES'
 			ORDER BY 
 				tbe.document_evaluation_score DESC, -- 1차전형 점수
-				tbd.general_subjects_score DESC, -- 일반교과성적이 우수한자
-				tbd.score_3_1 DESC, -- 3-1,2-2,2-1,1-2 순으로 성적이 우수한자
-				tbd.score_2_2 DESC,
-				tbd.score_2_1 DESC,
-				tbd.score_1_2 DESC,
-				tbd.total_non_subjects_score DESC -- 비교과성적이 우수한자
+				? -- 동점자 처리기준 (TieBreakerQuery)
 			LIMIT ?
 		) AS limited_tbo
 		ON tbo.oneseo_id = limited_tbo.oneseo_id
 		SET tbo.applied_screening = ?
 		WHERE tbo.oneseo_id IS NOT NULL;
 `)
-	err := db.Exec(query, evaluateScreening, top, appliedScreening).Error
+	err := db.Exec(query, evaluateScreening, shared.CommonTieBreakerQuery, top, appliedScreening).Error
 	if err != nil {
 		return e.WrapRollbackNeededError(err)
 	}
