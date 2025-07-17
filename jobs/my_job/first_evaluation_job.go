@@ -17,7 +17,10 @@ type DecideAppliedScreeningStep struct {
 
 // job 에 필요한 step 들을 반환한다.
 func getSteps() []jobs.Step {
-	return []jobs.Step{&DecideAppliedScreeningStep{}}
+	return []jobs.Step{
+		&DecideAppliedScreeningStep{},
+		&AssignExaminationNumberStep{},
+	}
 }
 
 // BuildFirstEvaluationJob 1차 평가 배치 Job을 생성한다.
