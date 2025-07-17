@@ -112,10 +112,6 @@ func GetExaminationNumberSamples(db *gorm.DB, limit int) []ExaminationNumberSamp
 	return samples
 }
 
-func HasFirstPassApplicantsWithDB(db *gorm.DB) bool {
-	return CountFirstPassApplicants(db) > 0
-}
-
 func HasFirstPassApplicants() bool {
 	var count int
 	configs.MyDB.Raw(`
