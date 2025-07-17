@@ -5,6 +5,7 @@ import (
 	"log"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/repository/shared"
 
 	"gorm.io/gorm"
 )
@@ -26,29 +27,23 @@ func SaveAppliedScreening(db *gorm.DB, evaluateScreening []string, appliedScreen
 			FROM tb_oneseo tbo_inner
 			JOIN tb_member tbm 
 				ON tbo_inner.member_id = tbm.member_id
-			JOIN tb_entrance_test_result tbe 
-				ON tbo_inner.oneseo_id = tbe.oneseo_id
-			JOIN tb_entrance_test_factors_detail tbd 
-				ON tbe.entrance_test_result_id = tbd.entrance_test_factors_detail_id
+			JOIN tb_entrance_test_result tr 
+				ON tbo_inner.oneseo_id = tr.oneseo_id
+			JOIN tb_entrance_test_factors_detail td 
+				ON tr.entrance_test_result_id = td.entrance_test_factors_detail_id
 			WHERE tbo_inner.wanted_screening IN ?
 			  AND tbo_inner.applied_screening IS NULL
 			  AND tbo_inner.real_oneseo_arrived_yn = 'YES'
 			ORDER BY 
-				tbe.document_evaluation_score DESC,
-				tbd.total_subjects_score DESC,
-				(tbd.score_3_2 + tbd.score_3_1) DESC,
-				(tbd.score_2_2 + tbd.score_2_1) DESC,
-				tbd.score_2_2 DESC,
-				tbd.score_2_1 DESC,
-				tbd.total_non_subjects_score DESC,
-				tbm.birth ASC
+				tr.document_evaluation_score DESC, -- 1차전형 점수
+				? -- 동점자 처리기준 (TieBreakerQuery)
 			LIMIT ?
 		) AS limited_tbo
 		ON tbo.oneseo_id = limited_tbo.oneseo_id
 		SET tbo.applied_screening = ?
 		WHERE tbo.oneseo_id IS NOT NULL;
 `)
-	err := db.Exec(query, evaluateScreening, top, appliedScreening).Error
+	err := db.Exec(query, evaluateScreening, shared.CommonTieBreakerQuery, top, appliedScreening).Error
 	if err != nil {
 		return e.WrapRollbackNeededError(err)
 	}

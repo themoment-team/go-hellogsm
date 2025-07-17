@@ -2,6 +2,7 @@ package repository
 
 import (
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/repository/shared"
 
 	"gorm.io/gorm"
 )
@@ -13,7 +14,7 @@ func UpdateSecondTestPassStatusForAbsentees(db *gorm.DB) error {
 			SET tbo.pass_yn = 'NO',
 				tbe.second_test_pass_yn = 'NO'
 			WHERE tbe.first_test_pass_yn = 'YES'
-				AND (tbe.aptitude_evaluation_score IS NULL OR tbe.interview_score IS NULL)
+				AND (tbe.competency_evaluation_score IS NULL OR tbe.interview_score IS NULL)
 		`
 
 	err := db.Exec(query).Error
@@ -51,7 +52,7 @@ func IsAllAbsenteeFall(db *gorm.DB) (bool, error) {
 			SELECT COUNT(*) 
 			FROM tb_entrance_test_result 
 			WHERE first_test_pass_yn = 'YES' 
-			  AND (aptitude_evaluation_score IS NULL OR interview_score IS NULL)
+			  AND (competency_evaluation_score IS NULL OR interview_score IS NULL)
 		`
 	var absenteeCount int
 	err := db.Raw(query).Scan(&absenteeCount).Error
@@ -89,17 +90,11 @@ func QueryExtraAdOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_ADMISSION' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
-	err := db.Raw(query).Scan(&ids).Error
+	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
 		return nil, e.WrapRollbackNeededError(err)
 	}
@@ -152,17 +147,11 @@ func QueryExtraVeOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_VETERANS' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
-	err := db.Raw(query).Scan(&ids).Error
+	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
 		return nil, e.WrapRollbackNeededError(err)
 	}
@@ -215,17 +204,11 @@ func QuerySpecialOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'SPECIAL'
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-				td.total_subjects_score DESC,
-				(td.score_3_2 + td.score_3_1) DESC,
-				(td.score_2_2 + td.score_2_1) DESC, 
-				td.score_2_2 DESC, 
-				td.score_2_1 DESC, 
-				td.total_non_subjects_score DESC, 
-				m.birth ASC;
+				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
-	err := db.Raw(query).Scan(&ids).Error
+	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
 		return nil, e.WrapRollbackNeededError(err)
 	}
@@ -282,21 +265,15 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 					o.applied_screening = 'GENERAL'
 					AND tr.second_test_pass_yn IS NULL
 				ORDER BY 
-					(((tr.document_evaluation_score / 3) * 0.5) + (tr.aptitude_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
-					td.total_subjects_score DESC,
-					(td.score_3_2 + td.score_3_1) DESC,
-					(td.score_2_2 + td.score_2_1) DESC, 
-					td.score_2_2 DESC, 
-					td.score_2_1 DESC, 
-					td.total_non_subjects_score DESC, 
-					m.birth ASC
+					(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+					? -- 동점자 처리기준 (TieBreakerQuery)
 				LIMIT ?
 			) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 			JOIN tb_oneseo o ON subquery.oneseo_id = o.oneseo_id
 			SET tr.second_test_pass_yn = 'YES',
 				o.pass_yn = 'YES';
 		`
-	err := db.Exec(query, generalPassLimit).Error
+	err := db.Exec(query, shared.FinalTieBreakerQuery, generalPassLimit).Error
 	if err != nil {
 		return e.WrapRollbackNeededError(err)
 	}
