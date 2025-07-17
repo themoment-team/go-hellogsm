@@ -59,7 +59,7 @@ func validateBeforeExaminationNumberAssignment(db *gorm.DB) error {
 	if existingCount > 0 {
 		log.Printf("ERROR: 이미 [%d]개의 수험번호가 할당되어 있습니다.", existingCount)
 		log.Printf("수험번호 할당 작업이 이미 완료된 상태입니다. 중복 실행을 방지하기 위해 작업을 중단합니다.")
-		return e.WrapRollbackNeededError(e.WrapExpectedActualIsDiffError("수험번호가 이미 할당되어 있어 중복 실행을 방지합니다"))
+		return e.WrapExpectedActualIsDiffError("수험번호가 이미 할당되어 있어 중복 실행을 방지합니다")
 	}
 	return nil
 }
@@ -70,7 +70,7 @@ func validateAfterExaminationNumberAssignment(db *gorm.DB) error {
 	unassignedCount := repository.CountFirstPassWithoutExaminationNumber(db)
 	if unassignedCount > 0 {
 		log.Printf("ERROR: [%d]명의 1차 합격자에게 수험번호가 할당되지 않았습니다.", unassignedCount)
-		return e.WrapRollbackNeededError(e.WrapExpectedActualIsDiffError("일부 1차 합격자에게 수험번호가 할당되지 않았습니다"))
+		return e.WrapExpectedActualIsDiffError("일부 1차 합격자에게 수험번호가 할당되지 않았습니다")
 	}
 
 	// 수험번호 형식 검증
