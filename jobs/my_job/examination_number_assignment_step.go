@@ -8,13 +8,10 @@ import (
 	"themoment-team/go-hellogsm/repository"
 )
 
-// AssignExaminationNumberStep 수험번호를 할당하는 Step이다.
 type AssignExaminationNumberStep struct {
 }
 
 func (s *AssignExaminationNumberStep) Processor(batchContext *jobs.BatchContext, db *gorm.DB) error {
-	log.Println("수험번호 할당을 시작합니다.")
-
 	// 수험번호 할당 전 검증
 	err := validateBeforeExaminationNumberAssignment(db)
 	if err != nil {
@@ -42,9 +39,6 @@ func (s *AssignExaminationNumberStep) Processor(batchContext *jobs.BatchContext,
 	_, assignedCount, finalRooms := getExaminationNumberStatistics(db)
 	logExaminationNumberAssignmentComplete(assignedCount, finalRooms)
 
-	// 할당 결과 샘플 로그
-	logExaminationNumberSamples(db)
-
 	log.Println("수험번호 할당이 완료되었습니다.")
 	return nil
 }
@@ -67,16 +61,11 @@ func validateBeforeExaminationNumberAssignment(db *gorm.DB) error {
 		log.Printf("수험번호 할당 작업이 이미 완료된 상태입니다. 중복 실행을 방지하기 위해 작업을 중단합니다.")
 		return e.WrapRollbackNeededError(e.WrapExpectedActualIsDiffError("수험번호가 이미 할당되어 있어 중복 실행을 방지합니다"))
 	}
-	log.Println("기존 수험번호 할당이 없음을 확인했습니다.")
-
-	log.Println("수험번호 할당 전 검증이 완료되었습니다.")
 	return nil
 }
 
 // 수험번호 할당 후 검증
 func validateAfterExaminationNumberAssignment(db *gorm.DB) error {
-	log.Println("수험번호 할당 후 검증을 시작합니다.")
-
 	// 모든 1차 합격자에게 수험번호가 할당되었는지 확인
 	unassignedCount := repository.CountFirstPassWithoutExaminationNumber(db)
 	if unassignedCount > 0 {
@@ -102,14 +91,13 @@ func validateAfterExaminationNumberAssignment(db *gorm.DB) error {
 	return nil
 }
 
-// 수험번호 할당 통계를 반환한다
+// 수험번호 할당 통계 반환
 func getExaminationNumberStatistics(db *gorm.DB) (totalFirstPass int, assignedExamNumber int, rooms int) {
 	totalFirstPass = repository.CountFirstPassApplicants(db)
 	assignedExamNumber = repository.CountExistingExaminationNumbers(db)
 
-	// 필요한 고사실 수 (16명당 1개 고사실)
 	if totalFirstPass > 0 {
-		rooms = (totalFirstPass + 15) / 16 // 올림 계산
+		rooms = (totalFirstPass + 15) / 16
 	}
 
 	return totalFirstPass, assignedExamNumber, rooms
@@ -123,15 +111,4 @@ func logExaminationNumberAssignmentStart(totalFirstPass int, rooms int) {
 // 수험번호 할당 완료 로그
 func logExaminationNumberAssignmentComplete(assignedCount int, rooms int) {
 	log.Printf("수험번호 할당이 완료되었습니다. 할당된 수험번호: [%d]개, 사용된 고사실: [%d]개", assignedCount, rooms)
-}
-
-// 할당된 수험번호 샘플 로그
-func logExaminationNumberSamples(db *gorm.DB) {
-	samples := repository.GetExaminationNumberSamples(db, 10)
-
-	log.Println("=== 할당된 수험번호 샘플 (첫 10명) ===")
-	for _, sample := range samples {
-		log.Printf("이름: [%s], 전형: [%s], 수험번호: [%s]",
-			sample.Name, sample.AppliedScreening, sample.ExaminationNumber)
-	}
 }
