@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"gorm.io/gorm"
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+
+	"gorm.io/gorm"
 )
 
 type ExaminationNumberSample struct {
@@ -19,7 +20,12 @@ WITH FirstPassApplicants AS (
         o.oneseo_id,
         m.name,
         o.applied_screening,
-        ROW_NUMBER() OVER (ORDER BY o.oneseo_id ASC) AS row_num
+        o.oneseo_submit_code,
+        ROW_NUMBER() OVER (
+            ORDER BY 
+                SUBSTRING_INDEX(o.oneseo_submit_code, '-', 1) ASC,
+                CAST(SUBSTRING_INDEX(o.oneseo_submit_code, '-', -1) AS UNSIGNED) ASC
+        ) AS row_num
     FROM tb_oneseo o
     JOIN tb_member m ON o.member_id = m.member_id
     WHERE o.applied_screening IS NOT NULL 
