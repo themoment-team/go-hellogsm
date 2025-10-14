@@ -19,7 +19,7 @@ WITH FirstPassApplicants AS (
         o.oneseo_id,
         m.name,
         o.applied_screening,
-        ROW_NUMBER() OVER (ORDER BY m.name ASC, o.oneseo_id ASC) AS row_num
+        ROW_NUMBER() OVER (ORDER BY o.oneseo_id ASC) AS row_num
     FROM tb_oneseo o
     JOIN tb_member m ON o.member_id = m.member_id
     WHERE o.applied_screening IS NOT NULL 
