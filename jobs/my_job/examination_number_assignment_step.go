@@ -5,6 +5,7 @@ import (
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
+	"themoment-team/go-hellogsm/types"
 
 	"gorm.io/gorm"
 )
@@ -106,11 +107,9 @@ func getExaminationNumberStatistics(db *gorm.DB) (totalFirstPass int, assignedEx
 	assignedExamNumber = repository.CountExistingExaminationNumbers(db)
 
 	if totalFirstPass > 0 {
-		// 18,18,18,18,12,11 기준으로 필요한 고사실 수 산정, 추후 고사실 상황 변동 시 수정 필요
-		caps := []int{18, 18, 18, 18, 12, 11}
 		remain := totalFirstPass
 		rooms = 0
-		for _, c := range caps {
+		for _, c := range types.ExaminationRoomCapacities {
 			if remain <= 0 {
 				break
 			}

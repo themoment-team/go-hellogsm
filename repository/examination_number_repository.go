@@ -3,6 +3,7 @@ package repository
 import (
 	"themoment-team/go-hellogsm/configs"
 	e "themoment-team/go-hellogsm/error"
+	"themoment-team/go-hellogsm/types"
 
 	"gorm.io/gorm"
 )
@@ -209,11 +210,9 @@ func GetExaminationNumberStats() (totalFirstPass int, assignedExamNumber int, ro
 	`).Scan(&assignedExamNumber)
 
 	if totalFirstPass > 0 {
-		// 18,18,18,18,12,11 기준으로 필요한 방 수 추정
-		caps := []int{18, 18, 18, 18, 12, 11}
 		remain := totalFirstPass
 		rooms = 0
-		for _, c := range caps {
+		for _, c := range types.ExaminationRoomCapacities {
 			if remain <= 0 {
 				break
 			}
