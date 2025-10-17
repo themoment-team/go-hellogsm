@@ -13,6 +13,13 @@ type ExaminationNumberSample struct {
 	ExaminationNumber string
 }
 
+type OverflowApplicant struct {
+	Name             string
+	AppliedScreening string
+	OneseoSubmitCode string
+}
+
+// 고사장 상황 변동 시 수정 필요
 func AssignExaminationNumbers(db *gorm.DB) error {
 	query := `
 WITH FirstPassApplicants AS (
@@ -34,9 +41,30 @@ WITH FirstPassApplicants AS (
 UPDATE tb_oneseo AS o
 JOIN FirstPassApplicants AS fpa ON o.oneseo_id = fpa.oneseo_id
 SET o.examination_number = CONCAT(
-    LPAD(FLOOR((fpa.row_num - 1) / 16) + 1, 2, '0'),
-    LPAD(((fpa.row_num - 1) % 16) + 1, 2, '0')
-);`
+    LPAD(
+        CASE 
+            WHEN fpa.row_num <= 18 THEN 1
+            WHEN fpa.row_num <= 36 THEN 2
+            WHEN fpa.row_num <= 54 THEN 3
+            WHEN fpa.row_num <= 72 THEN 4
+            WHEN fpa.row_num <= 84 THEN 5
+            WHEN fpa.row_num <= 95 THEN 6
+            ELSE 6
+        END
+    , 2, '0'),
+    LPAD(
+        CASE 
+            WHEN fpa.row_num <= 18 THEN fpa.row_num
+            WHEN fpa.row_num <= 36 THEN fpa.row_num - 18
+            WHEN fpa.row_num <= 54 THEN fpa.row_num - 36
+            WHEN fpa.row_num <= 72 THEN fpa.row_num - 54
+            WHEN fpa.row_num <= 84 THEN fpa.row_num - 72
+            WHEN fpa.row_num <= 95 THEN fpa.row_num - 84
+            ELSE 0
+        END
+    , 2, '0')
+)
+WHERE fpa.row_num <= 95;`
 
 	err := db.Exec(query).Error
 	if err != nil {
@@ -118,6 +146,33 @@ func GetExaminationNumberSamples(db *gorm.DB, limit int) []ExaminationNumberSamp
 	return samples
 }
 
+// GetOverflowApplicants 95명을 초과한 지원자 목록을 정렬 순서대로 반환한다.
+func GetOverflowApplicants(db *gorm.DB) []OverflowApplicant {
+	var list []OverflowApplicant
+	db.Raw(`
+		WITH FirstPassApplicants AS (
+		    SELECT 
+		        m.name,
+		        o.applied_screening,
+		        o.oneseo_submit_code,
+		        ROW_NUMBER() OVER (
+		            ORDER BY 
+		                SUBSTRING_INDEX(o.oneseo_submit_code, '-', 1) ASC,
+		                CAST(SUBSTRING_INDEX(o.oneseo_submit_code, '-', -1) AS UNSIGNED) ASC
+		        ) AS row_num
+		    FROM tb_oneseo o
+		    JOIN tb_member m ON o.member_id = m.member_id
+		    WHERE o.applied_screening IS NOT NULL 
+		      AND o.real_oneseo_arrived_yn = 'YES'
+		)
+		SELECT name, applied_screening, oneseo_submit_code
+		FROM FirstPassApplicants
+		WHERE row_num > 95
+		ORDER BY row_num ASC
+	`).Scan(&list)
+	return list
+}
+
 func HasFirstPassApplicants() bool {
 	var count int
 	configs.MyDB.Raw(`
@@ -154,7 +209,20 @@ func GetExaminationNumberStats() (totalFirstPass int, assignedExamNumber int, ro
 	`).Scan(&assignedExamNumber)
 
 	if totalFirstPass > 0 {
-		rooms = (totalFirstPass + 15) / 16
+		// 18,18,18,18,12,11 기준으로 필요한 방 수 추정
+		caps := []int{18, 18, 18, 18, 12, 11}
+		remain := totalFirstPass
+		rooms = 0
+		for _, c := range caps {
+			if remain <= 0 {
+				break
+			}
+			rooms++
+			remain -= c
+		}
+		if remain > 0 {
+			// 정의된 방 수를 초과하는 경우 남는 인원은 미집계
+		}
 	}
 
 	return totalFirstPass, assignedExamNumber, rooms
