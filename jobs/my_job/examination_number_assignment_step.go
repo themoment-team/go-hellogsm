@@ -1,11 +1,13 @@
 package my_job
 
 import (
-	"gorm.io/gorm"
 	"log"
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/jobs"
 	"themoment-team/go-hellogsm/repository"
+	"themoment-team/go-hellogsm/types"
+
+	"gorm.io/gorm"
 )
 
 type AssignExaminationNumberStep struct {
@@ -68,9 +70,17 @@ func validateBeforeExaminationNumberAssignment(db *gorm.DB) error {
 func validateAfterExaminationNumberAssignment(db *gorm.DB) error {
 	// 모든 1차 합격자에게 수험번호가 할당되었는지 확인
 	unassignedCount := repository.CountFirstPassWithoutExaminationNumber(db)
+	overflow := repository.GetOverflowApplicants(db)
 	if unassignedCount > 0 {
-		log.Printf("ERROR: [%d]명의 1차 합격자에게 수험번호가 할당되지 않았습니다.", unassignedCount)
-		return e.WrapExpectedActualIsDiffError("일부 1차 합격자에게 수험번호가 할당되지 않았습니다")
+		if unassignedCount == len(overflow) {
+			log.Printf("좌석 수 초과로 수험번호 미부여된 인원: [%d]명", len(overflow))
+			for i, o := range overflow {
+				log.Printf("초과자 #%d: 이름=[%s], 적용전형=[%s], 제출코드=[%s]", i+1, o.Name, o.AppliedScreening, o.OneseoSubmitCode)
+			}
+		} else {
+			log.Printf("ERROR: 수험번호 미할당자 수 [%d]명, 초과자 수 [%d]명 불일치", unassignedCount, len(overflow))
+			return e.WrapExpectedActualIsDiffError("일부 1차 합격자에게 수험번호가 할당되지 않았습니다")
+		}
 	}
 
 	// 수험번호 형식 검증
@@ -97,7 +107,15 @@ func getExaminationNumberStatistics(db *gorm.DB) (totalFirstPass int, assignedEx
 	assignedExamNumber = repository.CountExistingExaminationNumbers(db)
 
 	if totalFirstPass > 0 {
-		rooms = (totalFirstPass + 15) / 16
+		remain := totalFirstPass
+		rooms = 0
+		for _, c := range types.ExaminationRoomCapacities {
+			if remain <= 0 {
+				break
+			}
+			rooms++
+			remain -= c
+		}
 	}
 
 	return totalFirstPass, assignedExamNumber, rooms

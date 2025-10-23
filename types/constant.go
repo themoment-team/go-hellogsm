@@ -49,3 +49,6 @@ const (
 	// 그냥 전체. 발생하지 않을 수
 	JustAll int = 99999
 )
+
+// 고사실 정원 (고사장 상황 변동 시 수정 필요)
+var ExaminationRoomCapacities = []int{18, 18, 18, 18, 12, 11}
