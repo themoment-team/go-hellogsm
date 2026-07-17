@@ -25,16 +25,16 @@ const (
 	ExtraAdmissionSuccessfulApplicantOf1E int = 1
 
 	// [2차 평가] 전형 별 합격자 수
-	GeneralSpecialSuccessfulApplicantOf2E int = 72
-	GeneralSuccessfulApplicantOf2E        int = 64
-	SpecialSuccessfulApplicantOf2E        int = 8
-	ExtraVeteransSuccessfulApplicantOf2E  int = 2
+	GeneralSpecialSuccessfulApplicantOf2E int = 64
+	GeneralSuccessfulApplicantOf2E        int = 58
+	SpecialSuccessfulApplicantOf2E        int = 6
+	ExtraVeteransSuccessfulApplicantOf2E  int = 1
 	ExtraAdmissionSuccessfulApplicantOf2E int = 1
 
 	// 학과 별 정원
-	SWMajor    = 36
-	IOTMajor   = 18
-	AIMajor    = 18
+	SWMajor    = 32
+	IOTMajor   = 16
+	AIMajor    = 16
 	ExtraMajor = 2
 
 	// 학과
