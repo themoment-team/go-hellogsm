@@ -12,8 +12,8 @@ var (
 	td.total_non_subjects_score DESC -- 비교과성적이 우수한자
 `
 	FinalTieBreakerQuery = fmt.Sprintf(`
-	%s
 	tr.competency_evaluation_score DESC, -- 역량검사 점수가 우수한자
 	tr.interview_score DESC, -- 면접 점수가 우수한자
+	%s
 `, CommonTieBreakerQuery)
 )
