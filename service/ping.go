@@ -12,8 +12,8 @@ func Ping() {
 }
 
 func mysqlPing() {
-	result := repository.SelectOne()
-	if result != 1 {
+	result, err := repository.SelectOne()
+	if *result != 1 || err != nil {
 		panic(fmt.Sprintf("mysql ping 결과: [%d] 실패", result))
 	}
 	log.Printf("mysql ping 결과: [%d] 성공", result)
