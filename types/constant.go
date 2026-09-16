@@ -19,9 +19,9 @@ const (
 	ExtraAdmissionScreening Screening = "EXTRA_ADMISSION"
 
 	// [1차 평가] 전형 별 합격자 수
-	GeneralSuccessfulApplicantOf1E        int = 84
-	SpecialSuccessfulApplicantOf1E        int = 11
-	ExtraVeteransSuccessfulApplicantOf1E  int = 2
+	GeneralSuccessfulApplicantOf1E        int = 76
+	SpecialSuccessfulApplicantOf1E        int = 8
+	ExtraVeteransSuccessfulApplicantOf1E  int = 1
 	ExtraAdmissionSuccessfulApplicantOf1E int = 1
 
 	// [2차 평가] 전형 별 합격자 수
