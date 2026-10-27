@@ -51,4 +51,4 @@ const (
 )
 
 // 고사실 정원 (고사장 상황 변동 시 수정 필요)
-var ExaminationRoomCapacities = []int{18, 18, 18, 18, 12, 11}
+var ExaminationRoomCapacities = []int{15, 15, 15, 15, 12, 12}

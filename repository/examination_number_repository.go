@@ -43,29 +43,29 @@ UPDATE tb_oneseo AS o
 JOIN FirstPassApplicants AS fpa ON o.oneseo_id = fpa.oneseo_id
 SET o.examination_number = CONCAT(
     LPAD(
-        CASE 
-            WHEN fpa.row_num <= 18 THEN 1
-            WHEN fpa.row_num <= 36 THEN 2
-            WHEN fpa.row_num <= 54 THEN 3
-            WHEN fpa.row_num <= 72 THEN 4
-            WHEN fpa.row_num <= 84 THEN 5
-            WHEN fpa.row_num <= 95 THEN 6
+        CASE
+            WHEN fpa.row_num <= 15 THEN 1
+            WHEN fpa.row_num <= 30 THEN 2
+            WHEN fpa.row_num <= 45 THEN 3
+            WHEN fpa.row_num <= 60 THEN 4
+            WHEN fpa.row_num <= 72 THEN 5
+            WHEN fpa.row_num <= 84 THEN 6
             ELSE 6
         END
     , 2, '0'),
     LPAD(
-        CASE 
-            WHEN fpa.row_num <= 18 THEN fpa.row_num
-            WHEN fpa.row_num <= 36 THEN fpa.row_num - 18
-            WHEN fpa.row_num <= 54 THEN fpa.row_num - 36
-            WHEN fpa.row_num <= 72 THEN fpa.row_num - 54
+        CASE
+            WHEN fpa.row_num <= 15 THEN fpa.row_num
+            WHEN fpa.row_num <= 30 THEN fpa.row_num - 15
+            WHEN fpa.row_num <= 45 THEN fpa.row_num - 30
+            WHEN fpa.row_num <= 60 THEN fpa.row_num - 45
+            WHEN fpa.row_num <= 72 THEN fpa.row_num - 60
             WHEN fpa.row_num <= 84 THEN fpa.row_num - 72
-            WHEN fpa.row_num <= 95 THEN fpa.row_num - 84
             ELSE 0
         END
     , 2, '0')
 )
-WHERE fpa.row_num <= 95;`
+WHERE fpa.row_num <= 84;`
 
 	err := db.Exec(query).Error
 	if err != nil {
@@ -168,7 +168,7 @@ func GetOverflowApplicants(db *gorm.DB) []OverflowApplicant {
 		)
 		SELECT name, applied_screening, oneseo_submit_code
 		FROM FirstPassApplicants
-		WHERE row_num > 95
+		WHERE row_num > 84
 		ORDER BY row_num ASC
 	`).Scan(&list)
 	return list
