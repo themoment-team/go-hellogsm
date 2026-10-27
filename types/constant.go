@@ -51,4 +51,14 @@ const (
 )
 
 // 고사실 정원 (고사장 상황 변동 시 수정 필요)
-var ExaminationRoomCapacities = []int{15, 15, 15, 15, 12, 12}
+// 06번 고사실은 정원 외 특별전형(최대 2명)까지 포함한 정원으로 다른 고사실보다 2명 더 크게 잡는다.
+var ExaminationRoomCapacities = []int{15, 15, 15, 15, 12, 14}
+
+// TotalExaminationRoomCapacity 전체 고사실 정원 합계를 반환한다.
+func TotalExaminationRoomCapacity() int {
+	total := 0
+	for _, c := range ExaminationRoomCapacities {
+		total += c
+	}
+	return total
+}
