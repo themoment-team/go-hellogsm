@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	e "themoment-team/go-hellogsm/error"
 	"themoment-team/go-hellogsm/repository/shared"
 
@@ -80,19 +81,19 @@ func IsAllAbsenteeFall(db *gorm.DB) (bool, error) {
 
 // extra admission oneseo id조회 쿼리 (성적순으로 order)
 func QueryExtraAdOneseoIds(db *gorm.DB) ([]int, error) {
-	query := `
-			SELECT o.oneseo_id 
+	query := fmt.Sprintf(`
+			SELECT o.oneseo_id
 			FROM tb_oneseo o
 			JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
 			JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
 			JOIN tb_member m ON o.member_id = m.member_id
-			WHERE 
-				o.applied_screening = 'EXTRA_ADMISSION' 
+			WHERE
+				o.applied_screening = 'EXTRA_ADMISSION'
 				AND tr.second_test_pass_yn IS NULL
-			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+			ORDER BY
+				%s DESC,
 				? -- 동점자 처리기준 (TieBreakerQuery)
-		`
+		`, shared.FinalScoreExpr)
 	var ids []int
 	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
@@ -137,19 +138,19 @@ func UpdateAppliedScreeingForExtraAdFall(fallExtraAdOneseoIds []int, db *gorm.DB
 
 // extra veteran oneseo id조회 쿼리 (성적순으로 order)
 func QueryExtraVeOneseoIds(db *gorm.DB) ([]int, error) {
-	query := `
-			SELECT o.oneseo_id 
+	query := fmt.Sprintf(`
+			SELECT o.oneseo_id
 			FROM tb_oneseo o
 			JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
 			JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
 			JOIN tb_member m ON o.member_id = m.member_id
-			WHERE 
-				o.applied_screening = 'EXTRA_VETERANS' 
+			WHERE
+				o.applied_screening = 'EXTRA_VETERANS'
 				AND tr.second_test_pass_yn IS NULL
-			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+			ORDER BY
+				%s DESC,
 				? -- 동점자 처리기준 (TieBreakerQuery)
-		`
+		`, shared.FinalScoreExpr)
 	var ids []int
 	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
@@ -194,19 +195,19 @@ func UpdateAppliedScreeingForExtraVeFall(fallExtraVeOneseoIds []int, db *gorm.DB
 
 // special oneseo id조회 쿼리 (성적순으로 order)
 func QuerySpecialOneseoIds(db *gorm.DB) ([]int, error) {
-	query := `
-			SELECT o.oneseo_id 
+	query := fmt.Sprintf(`
+			SELECT o.oneseo_id
 			FROM tb_oneseo o
 			JOIN tb_entrance_test_result tr ON o.oneseo_id = tr.oneseo_id
 			JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
 			JOIN tb_member m ON o.member_id = m.member_id
-			WHERE 
+			WHERE
 				o.applied_screening = 'SPECIAL'
 				AND tr.second_test_pass_yn IS NULL
-			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+			ORDER BY
+				%s DESC,
 				? -- 동점자 처리기준 (TieBreakerQuery)
-		`
+		`, shared.FinalScoreExpr)
 	var ids []int
 	err := db.Raw(query, shared.FinalTieBreakerQuery).Scan(&ids).Error
 	if err != nil {
@@ -253,7 +254,7 @@ func UpdateAppliedScreeningForSpecialFall(fallSpecialOneseoIds []int, db *gorm.D
 func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 
 	// second_test_pass_yn = YES
-	query := `
+	query := fmt.Sprintf(`
 			UPDATE tb_entrance_test_result tr
 			JOIN (
 				SELECT tr.entrance_test_result_id, o.oneseo_id
@@ -261,18 +262,18 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 				JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
 				JOIN tb_oneseo o ON tr.oneseo_id = o.oneseo_id
 				JOIN tb_member m ON o.member_id = m.member_id
-				WHERE 
+				WHERE
 					o.applied_screening = 'GENERAL'
 					AND tr.second_test_pass_yn IS NULL
-				ORDER BY 
-					(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+				ORDER BY
+					%s DESC,
 					? -- 동점자 처리기준 (TieBreakerQuery)
 				LIMIT ?
 			) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
 			JOIN tb_oneseo o ON subquery.oneseo_id = o.oneseo_id
 			SET tr.second_test_pass_yn = 'YES',
 				o.pass_yn = 'YES';
-		`
+		`, shared.FinalScoreExpr)
 	err := db.Exec(query, shared.FinalTieBreakerQuery, generalPassLimit).Error
 	if err != nil {
 		return e.WrapRollbackNeededError(err)

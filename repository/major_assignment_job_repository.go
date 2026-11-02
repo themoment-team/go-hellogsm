@@ -94,19 +94,19 @@ func QueryByScreeningsAssignedMajor(firstScreening types.Screening, secondScreen
 func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
 	var applicants []types.Applicant
 
-	rows, err := configs.MyDB.Raw(`
-		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
-		FROM tb_member m 
+	rows, err := configs.MyDB.Raw(fmt.Sprintf(`
+		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major
+		FROM tb_member m
 		JOIN tb_oneseo o ON m.member_id = o.member_id
 		JOIN tb_entrance_test_result tr ON tr.oneseo_id = o.oneseo_id
 		JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
-		WHERE tr.second_test_pass_yn = 'YES' AND 
-		      o.entrance_intention_yn IS NULL AND 
+		WHERE tr.second_test_pass_yn = 'YES' AND
+		      o.entrance_intention_yn IS NULL AND
 		      m.role = 'APPLICANT'
-		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+		ORDER BY
+		%s DESC,
 		? -- 동점자 처리기준 (TieBreakerQuery)
-	`, shared.FinalTieBreakerQuery).Rows()
+	`, shared.FinalScoreExpr), shared.FinalTieBreakerQuery).Rows()
 
 	if err != nil {
 		log.Println(err)
@@ -134,19 +134,19 @@ func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
 func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
 	var applicants []types.Applicant
 
-	rows, err := configs.MyDB.Raw(`
-		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major 
-		FROM tb_member m 
+	rows, err := configs.MyDB.Raw(fmt.Sprintf(`
+		SELECT m.member_id, o.applied_screening, o.first_desired_major, o.second_desired_major, o.third_desired_major
+		FROM tb_member m
 		JOIN tb_oneseo o ON m.member_id = o.member_id
 		JOIN tb_entrance_test_result tr ON tr.oneseo_id = o.oneseo_id
 		JOIN tb_entrance_test_factors_detail td ON tr.entrance_test_factors_detail_id = td.entrance_test_factors_detail_id
 		WHERE tr.second_test_pass_yn = 'NO' AND
-		      o.entrance_intention_yn IS NULL AND 
+		      o.entrance_intention_yn IS NULL AND
 		      m.role = 'APPLICANT'
-		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
+		ORDER BY
+		%s DESC,
 		? -- 동점자 처리기준 (TieBreakerQuery)
-	`, shared.FinalTieBreakerQuery).Rows()
+	`, shared.FinalScoreExpr), shared.FinalTieBreakerQuery).Rows()
 
 	if err != nil {
 		log.Println(err)
