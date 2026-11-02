@@ -104,7 +104,7 @@ func QueryAllByFinalTestPassApplicant() (error, []types.Applicant) {
 		      o.entrance_intention_yn IS NULL AND 
 		      m.role = 'APPLICANT'
 		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+		(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 		? -- 동점자 처리기준 (TieBreakerQuery)
 	`, shared.FinalTieBreakerQuery).Rows()
 
@@ -144,7 +144,7 @@ func QueryAllByAdditionalApplicant() (error, []types.Applicant) {
 		      o.entrance_intention_yn IS NULL AND 
 		      m.role = 'APPLICANT'
 		ORDER BY 
-		(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+		(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 		? -- 동점자 처리기준 (TieBreakerQuery)
 	`, shared.FinalTieBreakerQuery).Rows()
 

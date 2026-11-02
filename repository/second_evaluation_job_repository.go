@@ -90,7 +90,7 @@ func QueryExtraAdOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_ADMISSION' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
@@ -147,7 +147,7 @@ func QueryExtraVeOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'EXTRA_VETERANS' 
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
@@ -204,7 +204,7 @@ func QuerySpecialOneseoIds(db *gorm.DB) ([]int, error) {
 				o.applied_screening = 'SPECIAL'
 				AND tr.second_test_pass_yn IS NULL
 			ORDER BY 
-				(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+				(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 				? -- 동점자 처리기준 (TieBreakerQuery)
 		`
 	var ids []int
@@ -265,7 +265,7 @@ func UpdateSecondTestPassYnForGeneral(generalPassLimit int, db *gorm.DB) error {
 					o.applied_screening = 'GENERAL'
 					AND tr.second_test_pass_yn IS NULL
 				ORDER BY 
-					(((tr.document_evaluation_score / 3) * 0.5) + (tr.competency_evaluation_score * 0.3) + (tr.interview_score * 0.2)) DESC, 
+					(((tr.document_evaluation_score / 3) * 0.6) + (tr.competency_evaluation_score * 0.2) + (tr.interview_score * 0.2)) DESC, 
 					? -- 동점자 처리기준 (TieBreakerQuery)
 				LIMIT ?
 			) AS subquery ON tr.entrance_test_result_id = subquery.entrance_test_result_id
